@@ -15,7 +15,94 @@ export type ModelRequirement = {
   requiresModel?: string; // If set, only activates when this model is available (fuzzy match)
   requiresAnyModel?: boolean; // If true, requires at least ONE model in fallbackChain to be available (or empty availability treated as unavailable)
   requiresProvider?: string[]; // If set, only activates when any of these providers is connected
+  requiresExactAvailability?: boolean;
 };
+
+export type ReviewProfileName = "test" | "production";
+
+export type LockedReviewRole = "argus-lane" | "merge" | "tie-break";
+
+export type LockedReviewModelTuple = {
+  agent: "argus" | "themis" | "oracle";
+  provider: string;
+  model: string;
+  variant: string;
+  reasoningEffort?: string;
+  thinking?: { type: "enabled" | "disabled"; budgetTokens?: number };
+};
+
+export type ReviewProfileModelPolicy = {
+  lockedArgusLane: LockedReviewModelTuple;
+  merge: LockedReviewModelTuple;
+  tieBreak: LockedReviewModelTuple;
+};
+
+export const LOCKED_REVIEW_ROLE_SESSION_MARKER = "themis-review-role:";
+
+const LOCKED_REVIEW_SESSION_PATTERN = /themis-review-role:(test|production):(argus-lane|merge|tie-break)/i;
+
+export const REVIEW_PROFILE_MODEL_POLICIES: Record<ReviewProfileName, ReviewProfileModelPolicy> = {
+  test: {
+    lockedArgusLane: {
+      agent: "argus",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    },
+    merge: {
+      agent: "themis",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    },
+    tieBreak: {
+      agent: "oracle",
+      provider: "openai",
+      model: "gpt-5.4",
+      variant: "xhigh",
+      reasoningEffort: "xhigh",
+    },
+  },
+  production: {
+    lockedArgusLane: {
+      agent: "argus",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    },
+    merge: {
+      agent: "themis",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    },
+    tieBreak: {
+      agent: "oracle",
+      provider: "openai",
+      model: "gpt-5.4",
+      variant: "xhigh",
+      reasoningEffort: "xhigh",
+    },
+  },
+};
+
+export function parseLockedReviewRoleSession(sessionID: string | undefined): { profile: ReviewProfileName; role: LockedReviewRole } | undefined {
+  if (!sessionID) return undefined;
+  const match = sessionID.match(LOCKED_REVIEW_SESSION_PATTERN);
+  if (!match) return undefined;
+  return {
+    profile: match[1] as ReviewProfileName,
+    role: match[2] as LockedReviewRole,
+  };
+}
+
+export function isLockedReviewRoleSession(sessionID: string | undefined): boolean {
+  return parseLockedReviewRoleSession(sessionID) !== undefined;
+}
 
 export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   sisyphus: {
@@ -150,6 +237,36 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
         providers: ["google", "github-copilot", "opencode"],
         model: "gemini-3.1-pro",
         variant: "high",
+      },
+      { providers: ["opencode-go"], model: "glm-5" },
+    ],
+  },
+  argus: {
+    fallbackChain: [
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4",
+        variant: "high",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-opus-4-6",
+        variant: "max",
+      },
+      { providers: ["opencode-go"], model: "glm-5" },
+    ],
+  },
+  themis: {
+    fallbackChain: [
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-opus-4-6",
+        variant: "max",
+      },
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4",
+        variant: "xhigh",
       },
       { providers: ["opencode-go"], model: "glm-5" },
     ],

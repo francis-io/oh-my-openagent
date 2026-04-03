@@ -181,7 +181,7 @@ describe("createBuiltinAgents with model overrides", () => {
 
      // #then - oracle resolves via connected cache fallback to openai/gpt-5.4 (not system default)
      expect(agents.oracle.model).toBe("openai/gpt-5.4")
-     expect(agents.oracle.reasoningEffort).toBe("medium")
+      expect(agents.oracle.reasoningEffort).toBe("medium")
      expect(agents.oracle.thinking).toBeUndefined()
      cacheSpy.mockRestore?.()
      providerModelsSpy.mockRestore()

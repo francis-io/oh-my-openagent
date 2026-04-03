@@ -5,6 +5,7 @@ import { RALPH_LOOP_TEMPLATE, ULW_LOOP_TEMPLATE, CANCEL_RALPH_TEMPLATE } from ".
 import { STOP_CONTINUATION_TEMPLATE } from "./templates/stop-continuation"
 import { REFACTOR_TEMPLATE } from "./templates/refactor"
 import { START_WORK_TEMPLATE } from "./templates/start-work"
+import { START_REVIEW_TEMPLATE } from "./templates/start-review"
 import { HANDOFF_TEMPLATE } from "./templates/handoff"
 import { REMOVE_AI_SLOPS_TEMPLATE } from "./templates/remove-ai-slops"
 
@@ -72,6 +73,23 @@ Timestamp: $TIMESTAMP
 $ARGUMENTS
 </user-request>`,
     argumentHint: "[plan-name]",
+  },
+  "start-review": {
+    description: "(builtin) Start a Themis-led completed-work review session",
+    agent: "themis",
+    template: `<command-instruction>
+${START_REVIEW_TEMPLATE}
+</command-instruction>
+
+<session-context>
+Session ID: $SESSION_ID
+Timestamp: $TIMESTAMP
+</session-context>
+
+<user-request>
+$ARGUMENTS
+</user-request>`,
+    argumentHint: "[plan-path|.|repo context]",
   },
   "stop-continuation": {
     description: "(builtin) Stop all continuation mechanisms (ralph loop, todo continuation, boulder) for this session",

@@ -1,6 +1,7 @@
 import type { OhMyOpenCodeConfig, HookName } from "../../config"
 import type { ModelCacheState } from "../../plugin-state"
 import type { PluginContext } from "../types"
+import type { BackgroundManager } from "../../features/background-agent"
 
 import {
   createContextWindowMonitorHook,
@@ -18,6 +19,7 @@ import {
   createDelegateTaskRetryHook,
   createTaskResumeInfoHook,
   createStartWorkHook,
+  createStartReviewHook,
   createPrometheusMdOnlyHook,
   createSisyphusJuniorNotepadHook,
   createNoSisyphusGptHook,
@@ -53,6 +55,7 @@ export type SessionHooks = {
   editErrorRecovery: ReturnType<typeof createEditErrorRecoveryHook> | null
   delegateTaskRetry: ReturnType<typeof createDelegateTaskRetryHook> | null
   startWork: ReturnType<typeof createStartWorkHook> | null
+  startReview: ReturnType<typeof createStartReviewHook> | null
   prometheusMdOnly: ReturnType<typeof createPrometheusMdOnlyHook> | null
   sisyphusJuniorNotepad: ReturnType<typeof createSisyphusJuniorNotepadHook> | null
   noSisyphusGpt: ReturnType<typeof createNoSisyphusGptHook> | null
@@ -68,10 +71,11 @@ export function createSessionHooks(args: {
   ctx: PluginContext
   pluginConfig: OhMyOpenCodeConfig
   modelCacheState: ModelCacheState
+  backgroundManager: BackgroundManager
   isHookEnabled: (hookName: HookName) => boolean
   safeHookEnabled: boolean
 }): SessionHooks {
-  const { ctx, pluginConfig, modelCacheState, isHookEnabled, safeHookEnabled } = args
+  const { ctx, pluginConfig, modelCacheState, backgroundManager, isHookEnabled, safeHookEnabled } = args
   const safeHook = <T>(hookName: HookName, factory: () => T): T | null =>
     safeCreateHook(hookName, factory, { enabled: safeHookEnabled })
 
@@ -222,6 +226,10 @@ export function createSessionHooks(args: {
     ? safeHook("start-work", () => createStartWorkHook(ctx))
     : null
 
+  const startReview = isHookEnabled("start-review")
+    ? safeHook("start-review", () => createStartReviewHook(ctx, { backgroundManager }))
+    : null
+
   const prometheusMdOnly = isHookEnabled("prometheus-md-only")
     ? safeHook("prometheus-md-only", () => createPrometheusMdOnlyHook(ctx))
     : null
@@ -285,6 +293,7 @@ export function createSessionHooks(args: {
     editErrorRecovery,
     delegateTaskRetry,
     startWork,
+    startReview,
     prometheusMdOnly,
     sisyphusJuniorNotepad,
     noSisyphusGpt,

@@ -3,6 +3,7 @@ import type { OpencodeClient, OnSubagentSessionCreated, QueueItem } from "./cons
 import { TMUX_CALLBACK_DELAY_MS } from "./constants"
 import { log, getAgentToolRestrictions, promptWithModelSuggestionRetry, createInternalAgentTextPart } from "../../shared"
 import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
+import { normalizeAgentForPrompt } from "../../shared/agent-display-names"
 import { subagentSessions } from "../claude-code-session-state"
 import { getTaskToastManager } from "../task-toast-manager"
 import { isInsideTmux } from "../../shared/tmux"
@@ -135,13 +136,14 @@ export async function startTask(
       }
     : undefined
   const launchVariant = input.model?.variant
+  const promptAgent = normalizeAgentForPrompt(input.agent) ?? input.agent
 
   applySessionPromptParams(sessionID, input.model)
 
   promptWithModelSuggestionRetry(client, {
     path: { id: sessionID },
     body: {
-      agent: input.agent,
+      agent: promptAgent,
       ...(launchModel ? { model: launchModel } : {}),
       ...(launchVariant ? { variant: launchVariant } : {}),
       system: input.skillContent,
@@ -149,7 +151,7 @@ export async function startTask(
         task: false,
         call_omo_agent: true,
         question: false,
-        ...getAgentToolRestrictions(input.agent),
+        ...getAgentToolRestrictions(promptAgent),
       },
       parts: [createInternalAgentTextPart(input.prompt)],
     },
@@ -225,20 +227,21 @@ export async function resumeTask(
       }
     : undefined
   const resumeVariant = task.model?.variant
+  const promptAgent = normalizeAgentForPrompt(task.agent) ?? task.agent
 
   applySessionPromptParams(task.sessionID, task.model)
 
   client.session.promptAsync({
     path: { id: task.sessionID },
     body: {
-      agent: task.agent,
+      agent: promptAgent,
       ...(resumeModel ? { model: resumeModel } : {}),
       ...(resumeVariant ? { variant: resumeVariant } : {}),
       tools: {
         task: false,
         call_omo_agent: true,
         question: false,
-        ...getAgentToolRestrictions(task.agent),
+        ...getAgentToolRestrictions(promptAgent),
       },
       parts: [createInternalAgentTextPart(input.prompt)],
     },

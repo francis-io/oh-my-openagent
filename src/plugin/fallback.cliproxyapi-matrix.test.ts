@@ -1,5 +1,5 @@
 declare const require: (name: string) => any
-const { afterEach, describe, expect, mock, test } = require("bun:test")
+const { afterAll, afterEach, describe, expect, mock, test } = require("bun:test")
 
 const PROVIDER_ID = "cliproxyapi"
 
@@ -17,6 +17,10 @@ import { createRuntimeFallbackHook } from "../hooks/runtime-fallback"
 import { _resetForTesting } from "../features/claude-code-session-state"
 import { _resetForTesting as _resetModelFallbackForTesting } from "../hooks/model-fallback/hook"
 import { SessionCategoryRegistry } from "../shared/session-category-registry"
+
+afterAll(() => {
+  mock.restore()
+})
 
 const PRIMARY_MODEL = {
   providerID: PROVIDER_ID,

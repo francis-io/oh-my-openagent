@@ -1,24 +1,33 @@
+import { BUILTIN_AGENT_IDENTITY_METADATA } from "../config/schema/agent-names"
+
 /**
  * Agent config keys to display names mapping.
  * Config keys are lowercase (e.g., "sisyphus", "atlas").
  * Display names include suffixes for UI/logs (e.g., "Sisyphus (Ultraworker)").
  */
-export const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  sisyphus: "Sisyphus (Ultraworker)",
-  hephaestus: "Hephaestus (Deep Agent)",
-  prometheus: "Prometheus (Plan Builder)",
-  atlas: "Atlas (Plan Executor)",
-  "sisyphus-junior": "Sisyphus-Junior",
-  metis: "Metis (Plan Consultant)",
-  momus: "Momus (Plan Critic)",
+const LEGACY_AGENT_DISPLAY_NAMES: Record<string, string> = {
   athena: "Athena (Council)",
   "athena-junior": "Athena-Junior (Council)",
-  oracle: "oracle",
-  librarian: "librarian",
-  explore: "explore",
-  "multimodal-looker": "multimodal-looker",
   "council-member": "council-member",
 }
+
+const BUILTIN_AGENT_DISPLAY_NAMES = Object.fromEntries(
+  Object.entries(BUILTIN_AGENT_IDENTITY_METADATA).map(([key, metadata]) => [
+    key,
+    metadata.displayName,
+  ]),
+)
+
+export const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  ...BUILTIN_AGENT_DISPLAY_NAMES,
+  ...LEGACY_AGENT_DISPLAY_NAMES,
+}
+
+export const AGENT_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(BUILTIN_AGENT_IDENTITY_METADATA)
+    .filter(([, metadata]) => metadata.color)
+    .map(([key, metadata]) => [key, metadata.color as string]),
+)
 
 const AGENT_LIST_SORT_PREFIXES: Record<string, string> = {
   atlas: "\u200B",
@@ -69,6 +78,11 @@ export function getAgentConfigKey(agentName: string): string {
   if (reversed !== undefined) return reversed
   if (AGENT_DISPLAY_NAMES[lower] !== undefined) return lower
   return lower
+}
+
+export function getAgentColor(agentName: string): string | undefined {
+  const configKey = getAgentConfigKey(agentName)
+  return AGENT_COLORS[configKey]
 }
 
 /**

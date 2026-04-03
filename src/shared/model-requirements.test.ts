@@ -2,8 +2,12 @@ import { describe, expect, test } from "bun:test"
 import {
   AGENT_MODEL_REQUIREMENTS,
   CATEGORY_MODEL_REQUIREMENTS,
+  LOCKED_REVIEW_ROLE_SESSION_MARKER,
+  REVIEW_PROFILE_MODEL_POLICIES,
   type FallbackEntry,
   type ModelRequirement,
+  isLockedReviewRoleSession,
+  parseLockedReviewRoleSession,
 } from "./model-requirements"
 
 describe("AGENT_MODEL_REQUIREMENTS", () => {
@@ -265,8 +269,8 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(hephaestus.requiresModel).toBeUndefined()
   })
 
-  test("all 11 builtin agents have valid fallbackChain arrays", () => {
-    // #given - list of 11 agent names
+  test("all 13 builtin agents have valid fallbackChain arrays", () => {
+    // #given - list of 13 agent names
     const expectedAgents = [
       "sisyphus",
       "hephaestus",
@@ -277,6 +281,8 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
       "prometheus",
       "metis",
       "momus",
+      "argus",
+      "themis",
       "atlas",
       "sisyphus-junior",
     ]
@@ -285,7 +291,7 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     const definedAgents = Object.keys(AGENT_MODEL_REQUIREMENTS)
 
     // #then - all agents present with valid fallbackChain
-    expect(definedAgents).toHaveLength(11)
+    expect(definedAgents).toHaveLength(13)
     for (const agent of expectedAgents) {
       const requirement = AGENT_MODEL_REQUIREMENTS[agent]
       expect(requirement).toBeDefined()
@@ -299,6 +305,72 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
         expect(entry.model.length).toBeGreaterThan(0)
       }
     }
+  })
+})
+
+describe("REVIEW_PROFILE_MODEL_POLICIES", () => {
+  test("defines explicit test and production profiles with locked lane, merge, and tie-break tuples", () => {
+    //#given
+    const testProfile = REVIEW_PROFILE_MODEL_POLICIES.test
+    const productionProfile = REVIEW_PROFILE_MODEL_POLICIES.production
+
+    //#then
+    expect(testProfile.lockedArgusLane).toEqual({
+      agent: "argus",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    })
+    expect(productionProfile.lockedArgusLane).toEqual({
+      agent: "argus",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    })
+
+    expect(testProfile.merge).toEqual({
+      agent: "themis",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    })
+    expect(productionProfile.merge).toEqual({
+      agent: "themis",
+      provider: "anthropic",
+      model: "claude-opus-4-6",
+      variant: "max",
+      thinking: { type: "enabled", budgetTokens: 32000 },
+    })
+    expect(testProfile.tieBreak).toEqual({
+      agent: "oracle",
+      provider: "openai",
+      model: "gpt-5.4",
+      variant: "xhigh",
+      reasoningEffort: "xhigh",
+    })
+    expect(productionProfile.tieBreak).toEqual({
+      agent: "oracle",
+      provider: "openai",
+      model: "gpt-5.4",
+      variant: "xhigh",
+      reasoningEffort: "xhigh",
+    })
+  })
+
+  test("parses locked review-role session markers and identifies fail-closed sessions", () => {
+    //#given
+    const sessionID = `ses_123_${LOCKED_REVIEW_ROLE_SESSION_MARKER}production:tie-break`
+
+    //#when
+    const parsed = parseLockedReviewRoleSession(sessionID)
+
+    //#then
+    expect(parsed).toEqual({ profile: "production", role: "tie-break" })
+    expect(isLockedReviewRoleSession(sessionID)).toBe(true)
+    expect(isLockedReviewRoleSession("ses_123_oracle")).toBe(false)
   })
 })
 

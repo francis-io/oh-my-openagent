@@ -139,6 +139,18 @@ describe("resolveSubagentExecution", () => {
     cacheSpy.mockRestore()
   })
 
+  test("resolves lowercase argus request to registered Argus display name", async () => {
+    const args = createBaseArgs({ subagent_type: "argus" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "Argus", mode: "subagent", model: "openai/gpt-5.4" },
+    ]))
+
+    const result = await resolveSubagentExecution(args, executorCtx, "sisyphus", "deep")
+
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("Argus")
+  })
+
   test("uses category fallback_models when agent override points at category", async () => {
     //#given
     const cacheSpy = spyOn(connectedProvidersCache, "readProviderModelsCache").mockReturnValue({

@@ -85,6 +85,8 @@ These agents are built for GPT's principle-driven style. Their prompts assume au
 | **Hephaestus** | Autonomous deep worker  | GPT-5.4 (medium) | Requires a GPT-capable provider. The craftsman. |
 | **Oracle**     | Architecture consultant | openai\|github-copilot\|opencode/gpt-5.4 (high) → google\|github-copilot\|opencode/gemini-3.1-pro (high) → anthropic\|github-copilot\|opencode/claude-opus-4-6 (max) → opencode-go/glm-5 | Exact runtime chain from `src/shared/model-requirements.ts`. |
 | **Momus**      | Ruthless reviewer       | openai\|github-copilot\|opencode/gpt-5.4 (xhigh) → anthropic\|github-copilot\|opencode/claude-opus-4-6 (max) → google\|github-copilot\|opencode/gemini-3.1-pro (high) → opencode-go/glm-5 | Exact runtime chain from `src/shared/model-requirements.ts`. |
+| **Themis**     | Review coordinator      | anthropic\|github-copilot\|opencode/claude-opus-4-6 (max) → openai\|github-copilot\|opencode/gpt-5.4 (high) → opencode-go/glm-5 | Coordinates completed-work review lifecycle, not leaf review. |
+| **Argus**      | Leaf review lane        | openai\|github-copilot\|opencode/gpt-5.4 (high) → anthropic\|github-copilot\|opencode/claude-opus-4-6 (max) → opencode-go/glm-5 | Emits structured review findings; does not orchestrate. |
 
 ### Utility Runners → Speed over Intelligence
 
@@ -179,6 +181,46 @@ When agents delegate work, they don't pick a model name — they pick a **catego
 | `writing`            | Text, docs, prose          | google\|github-copilot\|opencode/gemini-3-flash → opencode-go/kimi-k2.5 → anthropic\|github-copilot\|opencode/claude-sonnet-4-6 → opencode-go/minimax-m2.7 |
 
 See the [Orchestration System Guide](./orchestration.md) for how agents dispatch tasks to categories.
+
+---
+
+## Review Modes and `/start-review` Inference
+
+`/start-review` is a thin bootstrap into Themis review flow.
+
+- `plan+git-diff` is inferred when input includes a concrete `.sisyphus/plans/*.md` path.
+- `repo-wide` is inferred when input is repository-oriented without a concrete plan path.
+
+Confirmation contract:
+
+- If signals are ambiguous or soft (for example `/start-review .` or generic markdown context), Themis must confirm mode with the existing `question` tool before target materialization.
+- Recommended option ordering:
+  - `Review completed plan` first when a concrete `.sisyphus/plans/*.md` cue exists
+  - `Review full repository` first when no concrete plan cue exists, including dot-only input
+
+No review state or artifacts are created before ambiguous-mode confirmation completes.
+
+Canonical output and artifact layout:
+
+- Canonical remediation output: `.sisyphus/plans/review-remediation-{review-run-id}.md`
+- Run artifacts: `.sisyphus/reviews/{review-run-id}/target.json`, `state.json`, `merged-findings.json`, `conflicts.json`, lane pass files, `remediation-plan.snapshot.md`, and `canonical-remediation-path.txt`
+
+Runtime phase contract:
+
+- Convergence persists pass boundaries in `state.json` before merge/tie-break post-processing begins.
+- The runtime then advances through `merge_pending` and, when unresolved conflicts remain, `tie_break_pending`.
+- The run reaches `completed` only after final unresolved conflicts have either been dismissed or accepted as actionable by the user.
+
+Final conflict adjudication:
+
+- If Oracle tie-break leaves unresolved conflicts, Themis reuses the existing `question` tool path to ask exactly one final adjudication wave.
+- Pending final conflicts are stored durably in `state.json` as `pending_final_conflict_batch` and are reused on resume rather than re-asked.
+- Choosing a non-dismiss option marks the finding `accepted_open`; choosing `Dismiss finding` suppresses it for the current suppression scope.
+
+Themis merge contract:
+
+- Deterministic TypeScript merge remains authoritative for consensus selection.
+- Themis merge acts as a validation/reporting lane over that deterministic merge input; it does not replace consensus selection with a second merge authority.
 
 ---
 

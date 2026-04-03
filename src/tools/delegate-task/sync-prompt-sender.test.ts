@@ -216,12 +216,47 @@ bunDescribe("sendSyncPrompt", () => {
 
     //#then
     bunExpect(promptAsync).toHaveBeenCalled()
-    bunExpect(promptArgs.body.agent).toBe("sisyphus-junior")
+    bunExpect(promptArgs.body.agent).toBe("Sisyphus-Junior")
     bunExpect(promptArgs.body.model).toEqual({
       providerID: "openai",
       modelID: "gpt-5.4",
     })
     bunExpect(promptArgs.body.variant).toBe("medium")
+  })
+
+  bunTest("normalizes lowercase Argus to canonical prompt agent name", async () => {
+    const { sendSyncPrompt } = require("./sync-prompt-sender")
+
+    let promptArgs: any
+    const promptAsync = bunMock(async (input: any) => {
+      promptArgs = input
+      return { data: {} }
+    })
+
+    const mockClient = {
+      session: {
+        promptAsync,
+      },
+    }
+
+    const input = {
+      sessionID: "test-session",
+      agentToUse: "argus",
+      args: {
+        description: "review task",
+        prompt: "inspect code",
+        run_in_background: false,
+        load_skills: [],
+      },
+      systemContent: undefined,
+      categoryModel: undefined,
+      toastManager: null,
+      taskId: undefined,
+    }
+
+    await sendSyncPrompt(mockClient, input)
+
+    bunExpect(promptArgs.body.agent).toBe("Argus")
   })
 
   bunTest("passes promoted fallback model settings through supported prompt channels", async () => {

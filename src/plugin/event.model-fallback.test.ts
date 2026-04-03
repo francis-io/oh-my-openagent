@@ -1,5 +1,5 @@
 declare const require: (name: string) => any
-const { afterEach, describe, expect, mock, test } = require("bun:test")
+const { afterAll, afterEach, describe, expect, mock, test } = require("bun:test")
 
 mock.module("../shared/connected-providers-cache", () => ({
   readConnectedProvidersCache: () => null,
@@ -10,6 +10,9 @@ import { createEventHandler } from "./event"
 import { createChatMessageHandler } from "./chat-message"
 import { _resetForTesting, setMainSession } from "../features/claude-code-session-state"
 import { createModelFallbackHook, clearPendingModelFallback } from "../hooks/model-fallback/hook"
+afterAll(() => {
+  mock.restore()
+})
 describe("createEventHandler - model fallback", () => {
   const createHandler = (args?: { hooks?: any; pluginConfig?: any }) => {
     const abortCalls: string[] = []

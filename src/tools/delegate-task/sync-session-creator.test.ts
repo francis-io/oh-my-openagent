@@ -35,4 +35,32 @@ describe("createSyncSession", () => {
       ],
     })
   })
+
+  test("normalizes Argus session title to canonical display name", async () => {
+    const createCalls: Array<Record<string, unknown>> = []
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/parent" } }),
+        create: async (input: Record<string, unknown>) => {
+          createCalls.push(input)
+          return { data: { id: "ses_argus" } }
+        },
+      },
+    }
+
+    await createSyncSession(client as never, {
+      parentSessionID: "ses_parent",
+      agentToUse: "argus",
+      description: "review task",
+      defaultDirectory: "/fallback",
+    })
+
+    expect(createCalls[0]?.body).toEqual({
+      parentID: "ses_parent",
+      title: "review task (@Argus subagent)",
+      permission: [
+        { permission: "question", action: "deny", pattern: "*" },
+      ],
+    })
+  })
 })

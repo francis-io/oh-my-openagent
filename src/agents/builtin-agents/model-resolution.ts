@@ -5,10 +5,30 @@ export function applyModelResolution(input: {
   uiSelectedModel?: string
   userModel?: string
   requirement?: { fallbackChain?: { providers: string[]; model: string; variant?: string }[] }
+  lockedRequiredModel?: { providerID: string; modelID: string; variant?: string }
   availableModels: Set<string>
   systemDefaultModel?: string
 }) {
-  const { uiSelectedModel, userModel, requirement, availableModels, systemDefaultModel } = input
+  const { uiSelectedModel, userModel, requirement, lockedRequiredModel, availableModels, systemDefaultModel } = input
+
+  if (lockedRequiredModel) {
+    const transformedModel = transformModelForProvider(
+      lockedRequiredModel.providerID,
+      lockedRequiredModel.modelID,
+    )
+    const exactModel = `${lockedRequiredModel.providerID}/${transformedModel}`
+
+    if (!availableModels.has(exactModel)) {
+      return undefined
+    }
+
+    return {
+      model: exactModel,
+      provenance: "provider-fallback" as const,
+      variant: lockedRequiredModel.variant,
+    }
+  }
+
   return resolveModelPipeline({
     intent: { uiSelectedModel, userModel },
     constraints: { availableModels },

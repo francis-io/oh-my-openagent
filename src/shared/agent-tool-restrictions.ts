@@ -35,6 +35,19 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
     task: false,
   },
 
+  argus: {
+    write: false,
+    edit: false,
+    task: false,
+    call_omo_agent: false,
+  },
+
+  themis: {
+    task: true,
+    call_omo_agent: true,
+    question: true,
+  },
+
   "multimodal-looker": {
     read: true,
   },

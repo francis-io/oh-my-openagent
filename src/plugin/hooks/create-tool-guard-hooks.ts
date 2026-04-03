@@ -17,6 +17,7 @@ import {
   createJsonErrorRecoveryHook,
   createTodoDescriptionOverrideHook,
   createWebFetchRedirectGuardHook,
+  createReviewPathGuardHook,
 } from "../../hooks"
 import {
   getOpenCodeVersion,
@@ -41,6 +42,7 @@ export type ToolGuardHooks = {
   readImageResizer: ReturnType<typeof createReadImageResizerHook> | null
   todoDescriptionOverride: ReturnType<typeof createTodoDescriptionOverrideHook> | null
   webfetchRedirectGuard: ReturnType<typeof createWebFetchRedirectGuardHook> | null
+  reviewPathGuard: ReturnType<typeof createReviewPathGuardHook> | null
 }
 
 export function createToolGuardHooks(args: {
@@ -136,6 +138,10 @@ export function createToolGuardHooks(args: {
     ? safeHook("webfetch-redirect-guard", () => createWebFetchRedirectGuardHook(ctx))
     : null
 
+  const reviewPathGuard = isHookEnabled("review-path-guard")
+    ? safeHook("review-path-guard", () => createReviewPathGuardHook(ctx))
+    : null
+
   return {
     commentChecker,
     toolOutputTruncator,
@@ -151,5 +157,6 @@ export function createToolGuardHooks(args: {
     readImageResizer,
     todoDescriptionOverride,
     webfetchRedirectGuard,
+    reviewPathGuard,
   }
 }

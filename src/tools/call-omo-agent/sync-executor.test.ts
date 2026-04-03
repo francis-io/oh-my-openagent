@@ -110,6 +110,25 @@ describe("executeSync", () => {
     expect(promptInput?.body.parts).toEqual([{ type: "text", text: "find something" }])
   })
 
+  test("normalizes lowercase Argus to canonical prompt agent name", async () => {
+    const executeSync = await importExecuteSync()
+    const deps = createDependencies({
+      createOrGetSession: mock(async () => ({ sessionID: "ses-argus", isNew: true })),
+    })
+    const toolContext = createToolContext()
+    const recorder = createPromptAsyncRecorder()
+    const args = {
+      subagent_type: "argus",
+      description: "review task",
+      prompt: "inspect code",
+      run_in_background: false,
+    }
+
+    await executeSync(args, toolContext, createContext(recorder.promptAsync) as never, deps)
+
+    expect(recorder.getCapturedInput()?.body.agent).toBe("Argus")
+  })
+
   test("returns processed response with task metadata footer", async () => {
     //#given
     const executeSync = await importExecuteSync()

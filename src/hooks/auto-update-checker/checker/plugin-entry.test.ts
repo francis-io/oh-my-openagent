@@ -70,4 +70,25 @@ describe("findPluginEntry", () => {
     expect(pluginInfo?.isPinned).toBe(true)
     expect(pluginInfo?.pinnedVersion).toBe("3.5.2")
   })
+
+  test("recognizes canonical package name", () => {
+    fs.writeFileSync(configPath, JSON.stringify({ plugin: ["oh-my-openagent"] }))
+
+    const pluginInfo = findPluginEntry(temporaryDirectory)
+
+    expect(pluginInfo).not.toBeNull()
+    expect(pluginInfo?.entry).toBe("oh-my-openagent")
+    expect(pluginInfo?.isPinned).toBe(false)
+  })
+
+  test("recognizes local file plugin entry for canonical package path", () => {
+    fs.writeFileSync(configPath, JSON.stringify({ plugin: ["file:///tmp/oh-my-openagent"] }))
+
+    const pluginInfo = findPluginEntry(temporaryDirectory)
+
+    expect(pluginInfo).not.toBeNull()
+    expect(pluginInfo?.entry).toBe("file:///tmp/oh-my-openagent")
+    expect(pluginInfo?.isPinned).toBe(false)
+    expect(pluginInfo?.pinnedVersion).toBeNull()
+  })
 })

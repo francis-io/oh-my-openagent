@@ -1,5 +1,5 @@
 declare const require: (name: string) => any
-const { beforeEach, describe, expect, mock, test } = require("bun:test")
+const { afterAll, beforeEach, describe, expect, mock, test } = require("bun:test")
 
 const readConnectedProvidersCacheMock = mock(() => null)
 const readProviderModelsCacheMock = mock(() => null)
@@ -59,6 +59,14 @@ import {
   setSessionFallbackChain,
   setPendingModelFallback,
 } from "./hook"
+import {
+  _resetLockedReviewRuntimeSessionRegistryForTesting,
+  registerLockedReviewRuntimeSession,
+} from "../../shared/locked-review-session-registry"
+
+afterAll(() => {
+  mock.restore()
+})
 
 describe("model fallback hook", () => {
   beforeEach(() => {
@@ -71,6 +79,7 @@ describe("model fallback hook", () => {
     clearPendingModelFallback("ses_model_fallback_main")
     clearPendingModelFallback("ses_model_fallback_ghcp")
     clearPendingModelFallback("ses_model_fallback_google")
+    _resetLockedReviewRuntimeSessionRegistryForTesting()
   })
 
   test("applies pending fallback on chat.message by overriding model", async () => {
@@ -186,6 +195,42 @@ describe("model fallback hook", () => {
     expect(firstSet).toBe(true)
     expect(secondSet).toBe(false)
     clearPendingModelFallback(sessionID)
+  })
+
+  test("fails closed for locked review-role sessions", () => {
+    //#given
+    const sessionID = "ses_themis-review-role:production:merge"
+    clearPendingModelFallback(sessionID)
+
+    //#when
+    const set = setPendingModelFallback(
+      sessionID,
+      "Argus",
+      "openai",
+      "gpt-5.4",
+    )
+
+    //#then
+    expect(set).toBe(false)
+  })
+
+  test("fails closed for registered opaque locked review sessions", () => {
+    const sessionID = "ses_runtime_merge_1"
+    clearPendingModelFallback(sessionID)
+    registerLockedReviewRuntimeSession(sessionID, {
+      profile: "production",
+      role: "merge",
+      wave: 1,
+    })
+
+    const set = setPendingModelFallback(
+      sessionID,
+      "Themis (Reviewer)",
+      "anthropic",
+      "claude-opus-4-6",
+    )
+
+    expect(set).toBe(false)
   })
 
   test("skips no-op fallback entries that resolve to same provider/model", async () => {

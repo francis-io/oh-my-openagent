@@ -5,6 +5,7 @@ import { HOOK_NAME } from "./constants"
 import { log } from "../../shared/logger"
 import { SessionCategoryRegistry } from "../../shared/session-category-registry"
 import { normalizeFallbackModels, flattenToFallbackModelStrings } from "../../shared/model-resolver"
+import { isLockedReviewRuntimeSession } from "../../shared/locked-review-session-registry"
 
 /**
  * Returns fallback model strings for the runtime-fallback system.
@@ -16,6 +17,7 @@ export function getFallbackModelsForSession(
   agent: string | undefined,
   pluginConfig: OhMyOpenCodeConfig | undefined
 ): string[] {
+  if (isLockedReviewRuntimeSession(sessionID)) return []
   if (!pluginConfig) return []
 
   const raw = getRawFallbackModelsForSession(sessionID, agent, pluginConfig)
@@ -32,6 +34,7 @@ export function getRawFallbackModels(
   agent: string | undefined,
   pluginConfig: OhMyOpenCodeConfig | undefined,
 ): (string | FallbackModelObject)[] | undefined {
+  if (isLockedReviewRuntimeSession(sessionID)) return undefined
   if (!pluginConfig) return undefined
   return getRawFallbackModelsForSession(sessionID, agent, pluginConfig)
 }

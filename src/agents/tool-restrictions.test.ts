@@ -5,6 +5,7 @@ import { createExploreAgent } from "./explore"
 import { createMomusAgent } from "./momus"
 import { createMetisAgent } from "./metis"
 import { createAtlasAgent } from "./atlas"
+import { createArgusAgent } from "./argus"
 
 const TEST_MODEL = "anthropic/claude-sonnet-4-5"
 
@@ -80,6 +81,24 @@ describe("read-only agent tool restrictions", () => {
       for (const tool of FILE_WRITE_TOOLS) {
         expect(permission[tool]).toBe("deny")
       }
+    })
+  })
+
+  describe("Argus", () => {
+    test("denies file-writing and recursive-delegation tools", () => {
+      // given
+      const agent = createArgusAgent(TEST_MODEL)
+
+      // when
+      const permission = agent.permission as Record<string, string>
+
+      // then
+      for (const tool of FILE_WRITE_TOOLS) {
+        expect(permission[tool]).toBe("deny")
+      }
+      expect(permission["task"]).toBe("deny")
+      expect(permission["call_omo_agent"]).toBe("deny")
+      expect(permission["question"]).toBe("deny")
     })
   })
 

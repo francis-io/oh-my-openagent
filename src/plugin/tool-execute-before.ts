@@ -52,6 +52,7 @@ export function createToolExecuteBeforeHandler(args: {
     }
 
     await hooks.writeExistingFileGuard?.["tool.execute.before"]?.(input, output)
+    await hooks.reviewPathGuard?.["tool.execute.before"]?.(input, output)
     await hooks.questionLabelTruncator?.["tool.execute.before"]?.(input, output)
     await hooks.claudeCodeHooks?.["tool.execute.before"]?.(input, output)
     await hooks.nonInteractiveEnv?.["tool.execute.before"]?.(input, output)

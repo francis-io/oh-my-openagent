@@ -37,6 +37,7 @@ export { createPrometheusMdOnlyHook } from "./prometheus-md-only";
 export { createSisyphusJuniorNotepadHook } from "./sisyphus-junior-notepad";
 export { createTaskResumeInfoHook } from "./task-resume-info";
 export { createStartWorkHook } from "./start-work";
+export { createStartReviewHook } from "./start-review";
 export { createAtlasHook } from "./atlas";
 export { createDelegateTaskRetryHook } from "./delegate-task-retry";
 export { createQuestionLabelTruncatorHook } from "./question-label-truncator";
@@ -55,3 +56,4 @@ export { createReadImageResizerHook } from "./read-image-resizer"
 export { createTodoDescriptionOverrideHook } from "./todo-description-override"
 export { createWebFetchRedirectGuardHook } from "./webfetch-redirect-guard"
 export { createLegacyPluginToastHook } from "./legacy-plugin-toast"
+export { createReviewPathGuardHook } from "./review-path-guard"

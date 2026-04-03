@@ -1,12 +1,10 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { BackgroundManager } from "../../features/background-agent"
 import { isAgentRegistered } from "../../features/claude-code-session-state"
-import { normalizeAgentForPrompt } from "../../shared/agent-display-names"
 import { log } from "../../shared/logger"
-import { createInternalAgentTextPart, resolveInheritedPromptTools } from "../../shared"
 import { HOOK_NAME } from "./hook-name"
 import { BOULDER_CONTINUATION_PROMPT } from "./system-reminder-templates"
-import { resolveRecentPromptContextForSession } from "./recent-model-resolver"
+import { injectTopLevelPrompt } from "../shared/top-level-prompt-injector"
 import type { SessionState } from "./types"
 
 export async function injectBoulderContinuation(input: {
@@ -67,22 +65,37 @@ export async function injectBoulderContinuation(input: {
 	try {
 		log(`[${HOOK_NAME}] Injecting boulder continuation`, { sessionID, planName, remaining })
 
-    const promptContext = await resolveRecentPromptContextForSession(ctx, sessionID)
-    const inheritedTools = resolveInheritedPromptTools(sessionID, promptContext.tools)
-
-		await ctx.client.session.promptAsync({
-			path: { id: sessionID },
-			body: {
-				agent: normalizeAgentForPrompt(continuationAgent) ?? continuationAgent,
-				...(promptContext.model !== undefined ? { model: promptContext.model } : {}),
-				...(inheritedTools ? { tools: inheritedTools } : {}),
-        parts: [createInternalAgentTextPart(prompt)],
-      },
-      query: { directory: ctx.directory },
+    const injection = await injectTopLevelPrompt({
+      ctx,
+      sessionID,
+      agentName: continuationAgent,
+      prompt,
     })
 
-    sessionState.promptFailureCount = 0
-    log(`[${HOOK_NAME}] Boulder continuation injected`, { sessionID })
+    if (injection.status === "injected") {
+      sessionState.promptFailureCount = 0
+      log(`[${HOOK_NAME}] Boulder continuation injected`, {
+        sessionID,
+        promptAgent: injection.promptAgent,
+      })
+      return
+    }
+
+    if (injection.status === "retryable_failure") {
+      sessionState.promptFailureCount += 1
+      sessionState.lastFailureAt = Date.now()
+      log(`[${HOOK_NAME}] Boulder continuation retryable failure`, {
+        sessionID,
+        reason: injection.reason,
+        promptFailureCount: sessionState.promptFailureCount,
+      })
+      return
+    }
+
+    log(`[${HOOK_NAME}] Boulder continuation terminal failure`, {
+      sessionID,
+      reason: injection.reason,
+    })
   } catch (err) {
     sessionState.promptFailureCount += 1
     sessionState.lastFailureAt = Date.now()

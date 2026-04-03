@@ -252,6 +252,7 @@ export function createEventHandler(args: {
     await runEventHookSafely("runtimeFallback", hooks.runtimeFallback?.event, input);
     await runEventHookSafely("agentUsageReminder", hooks.agentUsageReminder?.event, input);
     await runEventHookSafely("categorySkillReminder", hooks.categorySkillReminder?.event, input);
+    await runEventHookSafely("startReview", hooks.startReview?.event, input);
     await runEventHookSafely("interactiveBashSession", hooks.interactiveBashSession?.event, input as EventInput);
     await runEventHookSafely("ralphLoop", hooks.ralphLoop?.event, input);
     await runEventHookSafely("stopContinuationGuard", hooks.stopContinuationGuard?.event, input);
@@ -313,10 +314,12 @@ export function createEventHandler(args: {
       if (sessionID) {
         const emittedAt = recentSyntheticIdles.get(sessionID);
         if (emittedAt && Date.now() - emittedAt < DEDUP_WINDOW_MS) {
+          log("[event] deduped real session.idle after recent synthetic idle", { sessionID });
           recentSyntheticIdles.delete(sessionID);
           return;
         }
         recentRealIdles.set(sessionID, Date.now());
+        log("[event] dispatching real session.idle", { sessionID });
       }
     }
 
@@ -327,10 +330,12 @@ export function createEventHandler(args: {
       const sessionID = (syntheticIdle.event.properties as Record<string, unknown>)?.sessionID as string;
       const emittedAt = recentRealIdles.get(sessionID);
       if (emittedAt && Date.now() - emittedAt < DEDUP_WINDOW_MS) {
+        log("[event] deduped synthetic session.idle after recent real idle", { sessionID });
         recentRealIdles.delete(sessionID);
         return;
       }
       recentSyntheticIdles.set(sessionID, Date.now());
+      log("[event] dispatching synthetic session.idle from session.status", { sessionID });
       await dispatchToHooks(syntheticIdle as EventInput);
     }
 

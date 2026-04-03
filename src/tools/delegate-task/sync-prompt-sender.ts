@@ -8,6 +8,7 @@ import {
 } from "../../shared/model-suggestion-retry"
 import { formatDetailedError } from "./error-formatting"
 import { getAgentToolRestrictions } from "../../shared/agent-tool-restrictions"
+import { normalizeAgentForPrompt } from "../../shared/agent-display-names"
 import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
 import { setSessionTools } from "../../shared/session-tools-store"
 import { createInternalAgentTextPart } from "../../shared/internal-initiator-marker"
@@ -49,11 +50,12 @@ export async function sendSyncPrompt(
   const allowTask = isPlanFamily(input.agentToUse)
   const tddEnabled = input.sisyphusAgentConfig?.tdd
   const effectivePrompt = buildTaskPrompt(input.args.prompt, input.agentToUse, tddEnabled)
+  const promptAgent = normalizeAgentForPrompt(input.agentToUse) ?? input.agentToUse
   const tools = {
     task: allowTask,
     call_omo_agent: true,
     question: false,
-    ...getAgentToolRestrictions(input.agentToUse),
+    ...getAgentToolRestrictions(promptAgent),
   }
   setSessionTools(input.sessionID, tools)
 
@@ -62,7 +64,7 @@ export async function sendSyncPrompt(
   const promptArgs = {
     path: { id: input.sessionID },
     body: {
-      agent: input.agentToUse,
+      agent: promptAgent,
       system: input.systemContent,
       tools,
       parts: [createInternalAgentTextPart(effectivePrompt)],

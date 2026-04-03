@@ -168,6 +168,9 @@ export function createChatMessageHandler(args: {
     if (hooks.startWork && isStartWorkHookOutput(output)) {
       await hooks.startWork["chat.message"]?.(input, output)
     }
+    if (hooks.startReview && isStartWorkHookOutput(output)) {
+      await hooks.startReview["chat.message"]?.(input, output)
+    }
 
     if (!hasConnectedProvidersCache()) {
       pluginContext.client.tui

@@ -2,6 +2,7 @@ import type { PluginInput } from "@opencode-ai/plugin"
 import { detectKeywordsWithType, extractPromptText } from "./detector"
 import { isPlannerAgent, isNonOmoAgent } from "./constants"
 import { log } from "../../shared"
+import { isLockedReviewRuntimeSession } from "../../shared/locked-review-session-registry"
 import {
   isSystemDirective,
   removeSystemReminders,
@@ -12,6 +13,13 @@ import {
   subagentSessions,
 } from "../../features/claude-code-session-state"
 import type { ContextCollector } from "../../features/context-injector"
+
+function isLockedReviewRuntimePrompt(promptText: string): boolean {
+  const normalizedPrompt = promptText.trimStart()
+  return normalizedPrompt.startsWith("Themis runtime review flow\nreview_run_id=")
+    || normalizedPrompt.startsWith("Themis runtime merge lane\nreview_run_id=")
+    || normalizedPrompt.startsWith("Oracle runtime tie-break lane\nreview_run_id=")
+}
 
 export function createKeywordDetectorHook(ctx: PluginInput, _collector?: ContextCollector) {
   function getRuntimeVariant(input: { variant?: string }, message: Record<string, unknown>): string | undefined {
@@ -48,6 +56,14 @@ export function createKeywordDetectorHook(ctx: PluginInput, _collector?: Context
       // Skip all keyword injection for non-OMO agents (e.g., OpenCode-Builder, Plan)
       if (isNonOmoAgent(currentAgent)) {
         log(`[keyword-detector] Skipping keyword injection for non-OMO agent`, { sessionID: input.sessionID, agent: currentAgent })
+        return
+      }
+
+      if (isLockedReviewRuntimeSession(input.sessionID) || isLockedReviewRuntimePrompt(promptText)) {
+        log(`[keyword-detector] Skipping keyword injection for locked review runtime`, {
+          sessionID: input.sessionID,
+          agent: currentAgent,
+        })
         return
       }
 

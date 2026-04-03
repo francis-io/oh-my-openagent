@@ -594,6 +594,54 @@ describe("Sisyphus-Junior agent override", () => {
       expect(result.data.agents?.momus?.category).toBe("quick")
     }
   })
+
+  test("schema accepts themis and argus agent names", () => {
+    // given
+    const config = {
+      agents: {
+        themis: {
+          category: "ultrabrain",
+        },
+        argus: {
+          category: "quick",
+        },
+      },
+    }
+
+    // when
+    const result = OhMyOpenCodeConfigSchema.safeParse(config)
+
+    // then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.agents?.themis?.category).toBe("ultrabrain")
+      expect(result.data.agents?.argus?.category).toBe("quick")
+    }
+  })
+
+  test("schema accepts color override for themis and argus", () => {
+    // given
+    const config = {
+      agents: {
+        themis: {
+          color: "#4C1D95",
+        },
+        argus: {
+          color: "#1E40AF",
+        },
+      },
+    }
+
+    // when
+    const result = OhMyOpenCodeConfigSchema.safeParse(config)
+
+    // then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.agents?.themis?.color).toBe("#4C1D95")
+      expect(result.data.agents?.argus?.color).toBe("#1E40AF")
+    }
+  })
 })
 
 describe("BrowserAutomationProviderSchema", () => {

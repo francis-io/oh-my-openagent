@@ -15,6 +15,7 @@ import {
   resolveInheritedPromptTools,
   createInternalAgentTextPart,
 } from "../../shared"
+import { normalizeAgentForPrompt } from "../../shared/agent-display-names"
 import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
 import { setSessionTools } from "../../shared/session-tools-store"
 import { SessionCategoryRegistry } from "../../shared/session-category-registry"
@@ -420,12 +421,13 @@ export class BackgroundManager {
       return null
     })
     const parentDirectory = parentSession?.data?.directory ?? this.directory
+    const promptAgent = normalizeAgentForPrompt(input.agent) ?? input.agent
     log(`[background-agent] Parent dir: ${parentSession?.data?.directory}, using: ${parentDirectory}`)
 
     const createResult = await this.client.session.create({
       body: {
         parentID: input.parentSessionID,
-        title: `${input.description} (@${input.agent} subagent)`,
+        title: `${input.description} (@${promptAgent} subagent)`,
         ...(input.sessionPermission ? { permission: input.sessionPermission } : {}),
       } as Record<string, unknown>,
       query: {
@@ -526,7 +528,7 @@ export class BackgroundManager {
     promptWithModelSuggestionRetry(this.client, {
       path: { id: sessionID },
       body: {
-        agent: input.agent,
+        agent: promptAgent,
         ...(launchModel ? { model: launchModel } : {}),
         ...(launchVariant ? { variant: launchVariant } : {}),
         system: input.skillContent,
@@ -535,7 +537,7 @@ export class BackgroundManager {
             task: false,
             call_omo_agent: true,
             question: false,
-            ...getAgentToolRestrictions(input.agent),
+            ...getAgentToolRestrictions(promptAgent),
           }
           setSessionTools(sessionID, tools)
           return tools
@@ -580,6 +582,12 @@ export class BackgroundManager {
 
   getTask(id: string): BackgroundTask | undefined {
     return this.tasks.get(id)
+  }
+
+  async getSessionMessages(sessionID: string): Promise<unknown> {
+    return this.client.session.messages({
+      path: { id: sessionID },
+    })
   }
 
   getTasksByParentSession(sessionID: string): BackgroundTask[] {
@@ -805,6 +813,7 @@ export class BackgroundManager {
         }
       : undefined
     const resumeVariant = existingTask.model?.variant
+    const promptAgent = normalizeAgentForPrompt(existingTask.agent) ?? existingTask.agent
 
     if (existingTask.model) {
       applySessionPromptParams(existingTask.sessionID!, existingTask.model)
@@ -813,7 +822,7 @@ export class BackgroundManager {
     this.client.session.promptAsync({
       path: { id: existingTask.sessionID },
       body: {
-        agent: existingTask.agent,
+        agent: promptAgent,
         ...(resumeModel ? { model: resumeModel } : {}),
         ...(resumeVariant ? { variant: resumeVariant } : {}),
         tools: (() => {
@@ -821,7 +830,7 @@ export class BackgroundManager {
             task: false,
             call_omo_agent: true,
             question: false,
-            ...getAgentToolRestrictions(existingTask.agent),
+            ...getAgentToolRestrictions(promptAgent),
           }
           setSessionTools(existingTask.sessionID!, tools)
           return tools

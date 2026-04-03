@@ -1,4 +1,7 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
+import type {
+  AgentName as SchemaBuiltinAgentName,
+} from "../config/schema/agent-names";
 
 /**
  * Agent mode determines UI model selection behavior:
@@ -114,17 +117,12 @@ export function isGeminiModel(model: string): boolean {
   return modelName.startsWith("gemini-");
 }
 
-export type BuiltinAgentName =
-  | "sisyphus"
-  | "hephaestus"
-  | "oracle"
-  | "librarian"
-  | "explore"
-  | "multimodal-looker"
-  | "metis"
-  | "momus"
-  | "atlas"
-  | "sisyphus-junior";
+export type CanonicalBuiltinAgentName = SchemaBuiltinAgentName;
+
+export type BuiltinAgentName = Exclude<
+  CanonicalBuiltinAgentName,
+  "prometheus"
+>;
 
 export type OverridableAgentName = "build" | BuiltinAgentName;
 

@@ -40,6 +40,7 @@ export const HookNameSchema = z.enum([
   "no-sisyphus-gpt",
   "no-hephaestus-non-gpt",
   "start-work",
+  "start-review",
   "atlas",
   "unstable-agent-babysitter",
   "task-resume-info",
@@ -53,6 +54,7 @@ export const HookNameSchema = z.enum([
   "read-image-resizer",
   "todo-description-override",
   "webfetch-redirect-guard",
+  "review-path-guard",
   "legacy-plugin-toast",
 ])
 

@@ -65,7 +65,27 @@ describe("call-omo-agent resolveOrCreateSessionId", () => {
     //#then
     expect(result).toEqual({ ok: true, sessionID: "ses_child_sync" })
     expect(createCalls).toHaveLength(1)
+    expect((createCalls[0] as { body?: { title?: string } })?.body?.title).toBe("sync test (@explore subagent)")
     expect(subagentSessions.has("ses_child_sync")).toBe(true)
+  })
+
+  test("normalizes Argus session title to canonical display name", async () => {
+    _resetForTesting()
+
+    const { ctx, toolContext, createCalls } = buildInput({
+      parentDirectory: "/parent",
+      contextDirectory: "/project",
+    })
+    const args = {
+      description: "sync review",
+      prompt: "hello",
+      subagent_type: "argus",
+      run_in_background: false,
+    } satisfies Parameters<typeof resolveOrCreateSessionId>[1]
+
+    await resolveOrCreateSessionId(ctx, args, toolContext)
+
+    expect((createCalls[0] as { body?: { title?: string } })?.body?.title).toBe("sync review (@Argus subagent)")
   })
 
   test("uses current working directory on Windows when parent directory is under AppData", async () => {

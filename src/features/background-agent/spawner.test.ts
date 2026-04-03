@@ -144,11 +144,57 @@ describe("background-agent spawner fallback model promotion", () => {
 
     //#then
     expect(promptCalls).toHaveLength(1)
-    expect(promptCalls[0]?.body?.agent).toBe("sisyphus-junior")
+    expect(promptCalls[0]?.body?.agent).toBe("Sisyphus-Junior")
     expect(promptCalls[0]?.body?.model).toEqual({
       providerID: "openai",
       modelID: "gpt-5.4",
     })
     expect(promptCalls[0]?.body?.variant).toBe("medium")
+  })
+
+  test("normalizes lowercase Argus key to canonical prompt agent name", async () => {
+    let promptArgs: any
+    const client = {
+      session: {
+        get: mock(async () => ({ data: { directory: "/tmp/test" } })),
+        create: mock(async () => ({ data: { id: "session-argus" } })),
+        promptAsync: mock(async (input: any) => {
+          promptArgs = input
+          return { data: {} }
+        }),
+      },
+    } as any
+
+    const task = createTask({
+      description: "Review code",
+      prompt: "Inspect repository",
+      agent: "argus",
+      parentSessionID: "parent-1",
+      parentMessageID: "message-1",
+    })
+
+    await startTask(
+      {
+        task,
+        input: {
+          description: task.description,
+          prompt: task.prompt,
+          agent: task.agent,
+          parentSessionID: task.parentSessionID,
+          parentMessageID: task.parentMessageID,
+        },
+      },
+      {
+        client,
+        directory: "/tmp/test",
+        concurrencyManager: { release: () => {} } as any,
+        tmuxEnabled: false,
+        onTaskError: () => {},
+      },
+    )
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(promptArgs?.body?.agent).toBe("Argus")
   })
 })

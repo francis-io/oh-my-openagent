@@ -19,6 +19,7 @@ import type {
 import type { LoadedSkill } from "../../features/opencode-skill-loader"
 
 const COMMAND_EXECUTE_FALLBACK_DEDUP_TTL_MS = 100
+const DIRECT_HANDOFF_COMMANDS = new Set(["start-review"])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -114,6 +115,14 @@ export function createAutoSlashCommandHook(options?: AutoSlashCommandHookOptions
         return
       }
 
+      if (DIRECT_HANDOFF_COMMANDS.has(parsed.command)) {
+        log(`[auto-slash-command] Direct handoff command detected, skipping template replacement`, {
+          sessionID: input.sessionID,
+          command: parsed.command,
+        })
+        return
+      }
+
       const commandKey = input.messageID
         ? `${input.sessionID}:${input.messageID}:${parsed.command}`
         : `${input.sessionID}:${parsed.command}`
@@ -179,6 +188,14 @@ export function createAutoSlashCommandHook(options?: AutoSlashCommandHookOptions
         command: input.command,
         args: input.arguments || "",
         raw: `/${input.command}${input.arguments ? " " + input.arguments : ""}`,
+      }
+
+      if (DIRECT_HANDOFF_COMMANDS.has(parsed.command.toLowerCase())) {
+        log(`[auto-slash-command] Direct handoff command.execute.before detected, skipping template injection`, {
+          sessionID: input.sessionID,
+          command: input.command,
+        })
+        return
       }
 
       const executionOptions: ExecutorOptions = {

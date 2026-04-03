@@ -54,6 +54,7 @@ export function createHooks(args: {
     ctx,
     pluginConfig,
     modelCacheState,
+    backgroundManager,
     isHookEnabled,
     safeHookEnabled,
   })

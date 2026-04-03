@@ -69,7 +69,7 @@ async function flushScheduledWork(): Promise<void> {
 
 function runSessionCreatedEvent(
   hook: ReturnType<HookFactory>,
-  properties?: { info?: { parentID?: string } }
+  properties?: { info?: { id?: string; parentID?: string } }
 ): void {
   hook.event({
     event: {
@@ -80,6 +80,7 @@ function runSessionCreatedEvent(
 }
 
 beforeEach(() => {
+  delete (globalThis as Record<string, unknown>)["__omo_auto_update_checker_root_sessions__"]
   mockShowConfigErrorsIfAny.mockClear()
   mockShowModelCacheWarningIfNeeded.mockClear()
   mockUpdateAndShowConnectedProvidersCacheStatus.mockClear()
@@ -96,6 +97,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.OPENCODE_CLI_RUN_MODE
+  delete (globalThis as Record<string, unknown>)["__omo_auto_update_checker_root_sessions__"]
 })
 
 describe("createAutoUpdateCheckerHook", () => {
@@ -176,6 +178,20 @@ describe("createAutoUpdateCheckerHook", () => {
     expect(mockUpdateAndShowConnectedProvidersCacheStatus).toHaveBeenCalledTimes(1)
     expect(mockRefreshModelCapabilitiesOnStartup).toHaveBeenCalledTimes(1)
     expect(mockShowModelCacheWarningIfNeeded).toHaveBeenCalledTimes(1)
+    expect(mockShowVersionToast).toHaveBeenCalledTimes(1)
+    expect(mockRunBackgroundUpdateCheck).toHaveBeenCalledTimes(1)
+  })
+
+  it("deduplicates startup work across duplicate hook instances for the same root session", async () => {
+    const createAutoUpdateCheckerHook = await importFreshHookFactory()
+    const first = createAutoUpdateCheckerHook(createPluginInput())
+    const second = createAutoUpdateCheckerHook(createPluginInput())
+
+    runSessionCreatedEvent(first, { info: { id: "ses-root" } })
+    runSessionCreatedEvent(second, { info: { id: "ses-root" } })
+    await flushScheduledWork()
+
+    expect(mockShowConfigErrorsIfAny).toHaveBeenCalledTimes(1)
     expect(mockShowVersionToast).toHaveBeenCalledTimes(1)
     expect(mockRunBackgroundUpdateCheck).toHaveBeenCalledTimes(1)
   })

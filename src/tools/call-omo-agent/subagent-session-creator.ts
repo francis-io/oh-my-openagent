@@ -1,5 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import { log } from "../../shared"
+import { normalizeAgentForPrompt } from "../../shared/agent-display-names"
 import { resolveSessionDirectory } from "../../shared"
 import { subagentSessions, syncSubagentSessions } from "../../features/claude-code-session-state"
 import type { CallOmoAgentArgs } from "./types"
@@ -39,7 +40,7 @@ export async function resolveOrCreateSessionId(
 
 	const body = {
 		parentID: toolContext.sessionID,
-		title: `${args.description} (@${args.subagent_type} subagent)`,
+		title: `${args.description} (@${normalizeAgentForPrompt(args.subagent_type) ?? args.subagent_type} subagent)`,
 	}
 
 	const createResult = await ctx.client.session.create({

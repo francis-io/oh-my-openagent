@@ -1,33 +1,13 @@
-import { describe, expect, it, mock } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it } from "bun:test"
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import type { LoadedSkill } from "../../features/opencode-skill-loader"
+import { executeSlashCommand } from "./executor"
 
-mock.module("../../shared", () => ({
-  resolveCommandsInText: async (content: string) => content,
-  resolveFileReferencesInText: async (content: string) => content,
-}))
-
-mock.module("../../tools/slashcommand", () => ({
-  discoverCommandsSync: () => [
-    {
-      name: "shadowed",
-      metadata: { name: "shadowed", description: "builtin" },
-      content: "builtin template",
-      scope: "builtin",
-    },
-    {
-      name: "shadowed",
-      metadata: { name: "shadowed", description: "project" },
-      content: "project template",
-      scope: "project",
-    },
-  ],
-}))
-
-mock.module("../../features/opencode-skill-loader", () => ({
-  discoverAllSkills: async (): Promise<LoadedSkill[]> => [],
-}))
-
-const { executeSlashCommand } = await import("./executor")
+const ENV_KEYS = ["CLAUDE_CONFIG_DIR"] as const
+type EnvKey = (typeof ENV_KEYS)[number]
+type EnvSnapshot = Record<EnvKey, string | undefined>
 
 function createRestrictedSkill(): LoadedSkill {
   return {
@@ -43,55 +23,67 @@ function createRestrictedSkill(): LoadedSkill {
 }
 
 describe("executeSlashCommand resolution semantics", () => {
-  it("returns project command when project and builtin names collide", async () => {
-    //#given
-    const parsed = {
-      command: "shadowed",
-      args: "",
-      raw: "/shadowed",
+  let tempDir = ""
+  let envSnapshot: EnvSnapshot
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), "omo-executor-resolution-test-"))
+    envSnapshot = { CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR }
+    process.env.CLAUDE_CONFIG_DIR = join(tempDir, "claude-config")
+    mkdirSync(join(process.env.CLAUDE_CONFIG_DIR, "commands"), { recursive: true })
+  })
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      const value = envSnapshot[key]
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
     }
+    rmSync(tempDir, { recursive: true, force: true })
+  })
 
-    //#when
-    const result = await executeSlashCommand(parsed, { skills: [] })
+  it("returns project command when project and user names collide", async () => {
+    const projectDir = join(tempDir, "project")
+    mkdirSync(join(projectDir, ".claude", "commands"), { recursive: true })
+    writeFileSync(
+      join(projectDir, ".claude", "commands", "shadowed.md"),
+      "---\ndescription: project\n---\nproject template\n",
+    )
+    writeFileSync(
+      join(process.env.CLAUDE_CONFIG_DIR!, "commands", "shadowed.md"),
+      "---\ndescription: user\n---\nuser template\n",
+    )
 
-    //#then
+    const result = await executeSlashCommand(
+      { command: "shadowed", args: "", raw: "/shadowed" },
+      { skills: [], directory: projectDir },
+    )
+
     expect(result.success).toBe(true)
     expect(result.replacementText).toContain("**Scope**: project")
     expect(result.replacementText).toContain("project template")
-    expect(result.replacementText).not.toContain("builtin template")
+    expect(result.replacementText).not.toContain("user template")
   })
 
   it("blocks slash skill invocation when invoking agent is missing", async () => {
-    //#given
-    const parsed = {
-      command: "restricted-skill",
-      args: "",
-      raw: "/restricted-skill",
-    }
+    const result = await executeSlashCommand(
+      { command: "restricted-skill", args: "", raw: "/restricted-skill" },
+      { skills: [createRestrictedSkill()] },
+    )
 
-    //#when
-    const result = await executeSlashCommand(parsed, { skills: [createRestrictedSkill()] })
-
-    //#then
     expect(result.success).toBe(false)
     expect(result.error).toBe('Skill "restricted-skill" is restricted to agent "hephaestus"')
   })
 
   it("allows slash skill invocation when invoking agent matches restriction", async () => {
-    //#given
-    const parsed = {
-      command: "restricted-skill",
-      args: "",
-      raw: "/restricted-skill",
-    }
+    const result = await executeSlashCommand(
+      { command: "restricted-skill", args: "", raw: "/restricted-skill" },
+      { skills: [createRestrictedSkill()], agent: "hephaestus" },
+    )
 
-    //#when
-    const result = await executeSlashCommand(parsed, {
-      skills: [createRestrictedSkill()],
-      agent: "hephaestus",
-    })
-
-    //#then
     expect(result.success).toBe(true)
     expect(result.replacementText).toContain("restricted template")
   })

@@ -44,7 +44,45 @@ describe("call-omo-agent createOrGetSession", () => {
     expect(createCalls).toHaveLength(1)
     const createBody = (createCalls[0] as any)?.body
     expect(createBody?.parentID).toBe("ses_parent")
+    expect(createBody?.title).toBe("test (@explore subagent)")
     expect(createBody?.permission).toBeUndefined()
     expect(subagentSessions.has("ses_child")).toBe(true)
+  })
+
+  test("normalizes Argus session title to canonical display name", async () => {
+    _resetForTesting()
+
+    const createCalls: Array<unknown> = []
+    const ctx = {
+      directory: "/project",
+      client: {
+        session: {
+          get: async () => ({ data: { directory: "/parent" } }),
+          create: async (args: unknown) => {
+            createCalls.push(args)
+            return { data: { id: "ses_argus" } }
+          },
+        },
+      },
+    }
+
+    const toolContext = {
+      sessionID: "ses_parent",
+      messageID: "msg_parent",
+      agent: "sisyphus",
+      abort: new AbortController().signal,
+    }
+
+    const args = {
+      description: "review task",
+      prompt: "hello",
+      subagent_type: "argus",
+      run_in_background: true,
+    }
+
+    await createOrGetSession(args as any, toolContext as any, ctx as any)
+
+    const createBody = (createCalls[0] as any)?.body
+    expect(createBody?.title).toBe("review task (@Argus subagent)")
   })
 })

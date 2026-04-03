@@ -35,5 +35,13 @@ export function createCommandExecuteBeforeHandler(args: {
     ) {
       await hooks.startWork["command.execute.before"]?.(input, output)
     }
+
+    if (
+      hooks.startReview
+      && input.command.toLowerCase() === "start-review"
+      && hasPartsOutput(output)
+    ) {
+      await hooks.startReview["command.execute.before"]?.(input, output)
+    }
   }
 }

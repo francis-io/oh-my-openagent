@@ -1,6 +1,7 @@
 import type { FallbackEntry } from "../../shared/model-requirements"
 import { getAgentConfigKey } from "../../shared/agent-display-names"
 import { AGENT_MODEL_REQUIREMENTS } from "../../shared/model-requirements"
+import { isLockedReviewRuntimeSession } from "../../shared/locked-review-session-registry"
 import { readConnectedProvidersCache, readProviderModelsCache } from "../../shared/connected-providers-cache"
 import { selectFallbackProvider } from "../../shared/model-error-classifier"
 import { transformModelForProvider } from "../../shared/provider-model-id-transform"
@@ -68,6 +69,11 @@ export function setPendingModelFallback(
   currentProviderID: string,
   currentModelID: string,
 ): boolean {
+  if (isLockedReviewRuntimeSession(sessionID)) {
+    log("[model-fallback] Locked review-role session is fail-closed; fallback bypassed for session: " + sessionID)
+    return false
+  }
+
   const agentKey = getAgentConfigKey(agentName)
   const requirements = AGENT_MODEL_REQUIREMENTS[agentKey]
   const sessionFallback = sessionFallbackChains.get(sessionID)

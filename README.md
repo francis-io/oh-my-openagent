@@ -251,6 +251,43 @@ Complex task? Don't prompt and pray.
 
 `/start-work` calls Prometheus. **Interviews you like a real engineer**, identifies scope and ambiguities, builds a verified plan before touching code. Agent knows what it's building before it starts.
 
+### Completed-Work Review. `/start-review`
+
+Use `/start-review` when implementation already exists and you want a Themis-led review pass.
+
+- **Themis** coordinates review lifecycle and final remediation output.
+- **Argus** runs reviewer lanes for findings and evidence.
+- **Profiles**:
+  - `test`: iteration-focused review profile with lighter model settings
+  - `production`: stricter higher-confidence profile for final gates
+
+The `test` profile uses a default 6-wave convergence cap, while `production` keeps the stricter 10-wave cap. Both profiles pin stronger review-role model policies during lane, merge, and tie-break execution.
+
+Review modes:
+
+- `plan+git-diff`: inferred when a concrete `.sisyphus/plans/*.md` path is provided
+- `repo-wide`: inferred for repository-oriented input with no concrete plan path
+
+Mode confirmation behavior:
+
+- Soft or ambiguous cues (including `/start-review .`) trigger a `question` tool confirmation before review-target materialization.
+- Recommended option order is deterministic:
+  1. `Review completed plan` first when a concrete `.sisyphus/plans/*.md` path is present
+  2. `Review full repository` first when plan cues are absent or only `.` is provided
+
+Canonical remediation output and artifacts:
+
+- Canonical plan: `.sisyphus/plans/review-remediation-{review-run-id}.md`
+- Review artifacts: `.sisyphus/reviews/{review-run-id}/`
+  - `target.json`
+  - `state.json`
+  - `lanes/{lane}/pass-{n}.json`
+  - `lanes/{lane}/pass-{n}.md`
+  - `merged-findings.json`
+  - `conflicts.json`
+  - `remediation-plan.snapshot.md`
+  - `canonical-remediation-path.txt`
+
 ### Skills
 
 Skills aren't just prompts. Each brings:

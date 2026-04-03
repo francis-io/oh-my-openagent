@@ -2,6 +2,7 @@ import { describe, test, expect } from "bun:test"
 import { loadBuiltinCommands } from "./commands"
 import { HANDOFF_TEMPLATE } from "./templates/handoff"
 import { REMOVE_AI_SLOPS_TEMPLATE } from "./templates/remove-ai-slops"
+import { START_REVIEW_TEMPLATE } from "./templates/start-review"
 import type { BuiltinCommandName } from "./types"
 
 describe("loadBuiltinCommands", () => {
@@ -68,6 +69,31 @@ describe("loadBuiltinCommands", () => {
 
     //#then
     expect(commands["start-work"].agent).toBe("sisyphus")
+  })
+
+  test("should include start-review command and assign Themis", () => {
+    //#given - no disabled commands
+
+    //#when
+    const commands = loadBuiltinCommands()
+
+    //#then
+    expect(commands["start-review"]).toBeDefined()
+    expect(commands["start-review"].name).toBe("start-review")
+    expect(commands["start-review"].agent).toBe("themis")
+  })
+
+  test("should include start-review bootstrap template and arguments", () => {
+    //#given - no disabled commands
+
+    //#when
+    const commands = loadBuiltinCommands()
+
+    //#then
+    expect(commands["start-review"].template).toContain(START_REVIEW_TEMPLATE)
+    expect(commands["start-review"].template).toContain("$SESSION_ID")
+    expect(commands["start-review"].template).toContain("$TIMESTAMP")
+    expect(commands["start-review"].template).toContain("$ARGUMENTS")
   })
 })
 

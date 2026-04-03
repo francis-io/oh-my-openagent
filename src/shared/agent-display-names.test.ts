@@ -1,5 +1,13 @@
 import { describe, it, expect } from "bun:test"
-import { AGENT_DISPLAY_NAMES, getAgentConfigKey, getAgentDisplayName, getAgentListDisplayName, normalizeAgentForPrompt } from "./agent-display-names"
+import {
+  AGENT_COLORS,
+  AGENT_DISPLAY_NAMES,
+  getAgentColor,
+  getAgentConfigKey,
+  getAgentDisplayName,
+  getAgentListDisplayName,
+  normalizeAgentForPrompt,
+} from "./agent-display-names"
 
 describe("getAgentDisplayName", () => {
   it("returns display name for lowercase config key (new format)", () => {
@@ -133,6 +141,18 @@ describe("getAgentDisplayName", () => {
     // then returns "multimodal-looker"
     expect(result).toBe("multimodal-looker")
   })
+
+  it("returns display name for themis", () => {
+    const configKey = "themis"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("Themis (Reviewer)")
+  })
+
+  it("returns display name for argus", () => {
+    const configKey = "argus"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("Argus")
+  })
 })
 
 describe("getAgentConfigKey", () => {
@@ -173,6 +193,8 @@ describe("getAgentConfigKey", () => {
     expect(getAgentConfigKey("Metis (Plan Consultant)")).toBe("metis")
     expect(getAgentConfigKey("Momus (Plan Critic)")).toBe("momus")
     expect(getAgentConfigKey("Sisyphus-Junior")).toBe("sisyphus-junior")
+    expect(getAgentConfigKey("Themis (Reviewer)")).toBe("themis")
+    expect(getAgentConfigKey("Argus")).toBe("argus")
   })
 
   it("resolves atlas even when the UI ordering prefix is present", () => {
@@ -194,6 +216,32 @@ describe("normalizeAgentForPrompt", () => {
   it("strips atlas UI ordering prefix back to canonical display name", () => {
     expect(normalizeAgentForPrompt(getAgentListDisplayName("atlas"))).toBe("Atlas (Plan Executor)")
   })
+
+  it("normalizes canonical names for themis and argus", () => {
+    expect(normalizeAgentForPrompt("themis")).toBe("Themis (Reviewer)")
+    expect(normalizeAgentForPrompt("argus")).toBe("Argus")
+    expect(normalizeAgentForPrompt("Argus")).toBe("Argus")
+  })
+})
+
+describe("getAgentColor", () => {
+  it("returns canonical colors for themis and argus", () => {
+    expect(getAgentColor("themis")).toBe("#4C1D95")
+    expect(getAgentColor("Argus")).toBe("#1E40AF")
+  })
+
+  it("returns undefined when no canonical color exists", () => {
+    expect(getAgentColor("sisyphus")).toBeUndefined()
+  })
+})
+
+describe("AGENT_COLORS", () => {
+  it("contains canonical color mappings", () => {
+    expect(AGENT_COLORS).toEqual({
+      themis: "#4C1D95",
+      argus: "#1E40AF",
+    })
+  })
 })
 
 describe("AGENT_DISPLAY_NAMES", () => {
@@ -207,6 +255,8 @@ describe("AGENT_DISPLAY_NAMES", () => {
       "sisyphus-junior": "Sisyphus-Junior",
       metis: "Metis (Plan Consultant)",
       momus: "Momus (Plan Critic)",
+      themis: "Themis (Reviewer)",
+      argus: "Argus",
       athena: "Athena (Council)",
       "athena-junior": "Athena-Junior (Council)",
       oracle: "oracle",

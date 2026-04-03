@@ -393,7 +393,42 @@ afterEach(() => {
 })
 
 describe("createEventHandler - event forwarding", () => {
-	it("forwards session.deleted to write-existing-file-guard hook", async () => {
+  it("forwards session.idle to startReview event hook", async () => {
+    const forwardedEvents: EventInput[] = []
+    const eventHandler = createEventHandler({
+      ctx: {} as never,
+      pluginConfig: {} as never,
+      firstMessageVariantGate: {
+        markSessionCreated: () => {},
+        clear: () => {},
+      },
+      managers: {
+        tmuxSessionManager: {
+          onSessionCreated: async () => {},
+          onSessionDeleted: async () => {},
+        },
+      } as never,
+      hooks: {
+        startReview: {
+          event: async (input: EventInput) => {
+            forwardedEvents.push(input)
+          },
+        },
+      } as never,
+    })
+
+    await eventHandler({
+      event: {
+        type: "session.idle",
+        properties: { sessionID: "ses-start-review-forward" },
+      },
+    } as any)
+
+    expect(forwardedEvents).toHaveLength(1)
+    expect(forwardedEvents[0]?.event.type).toBe("session.idle")
+  })
+
+  it("forwards session.deleted to write-existing-file-guard hook", async () => {
 		//#given
 		const forwardedEvents: EventInput[] = []
 		const disconnectedSessions: string[] = []
