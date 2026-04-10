@@ -1,3 +1,4 @@
+import type { ReviewLaneName } from "../../features/review-routing"
 import type { MaterializedReviewTarget, ReviewMode } from "../../features/review-target-resolution"
 import type { ReviewProfileName } from "../../shared/model-requirements"
 
@@ -53,7 +54,7 @@ export function createStartReviewRuntimeLanePrompts(input: {
   target: MaterializedReviewTarget
   review_run_id: string
   prior_findings?: PriorFindingHint[]
-}): Record<"argus", string> {
+}): Record<ReviewLaneName, string> {
   const groundedTarget = toGroundedTargetSection(input.target)
   const priorFindingsSection = toPriorFindingsSection(input.prior_findings)
   const basePrompt = [
@@ -72,6 +73,7 @@ export function createStartReviewRuntimeLanePrompts(input: {
   ].join("\n")
 
   return {
-    "argus": `${basePrompt}\nlane=argus`,
+    "argus-claude": `${basePrompt}\nlane=argus-claude`,
+    "argus-gpt": `${basePrompt}\nlane=argus-gpt`,
   }
 }

@@ -19,8 +19,8 @@ function assertExpectedLaneCoverage(input: {
   laneRecords: PersistedReviewState["lane_lineage_by_wave"][string]
 }): void {
   const lanes = new Set(input.laneRecords.map((record) => record.lane).filter(Boolean))
-  if (!lanes.has("argus")) {
-    throw new Error(`Wave ${input.wave} did not materialize Argus lane`)
+  if (lanes.size === 0) {
+    throw new Error(`Wave ${input.wave} did not materialize any Argus lane`)
   }
 }
 
