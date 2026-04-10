@@ -68,7 +68,24 @@ export const AgentOverridesSchema = z.object({
   metis: AgentOverrideConfigSchema.optional(),
   momus: AgentOverrideConfigSchema.optional(),
   themis: AgentOverrideConfigSchema.optional(),
-  argus: AgentOverrideConfigSchema.optional(),
+  argus: AgentOverrideConfigSchema.extend({
+    lanes: z.array(z.object({
+      model: z.string(),
+      variant: z.string().optional(),
+      thinking: z.object({
+        budgetTokens: z.number().optional(),
+      }).optional(),
+      reasoningEffort: z.string().optional(),
+    })).optional(),
+  }).superRefine((val, ctx) => {
+    if (val.lanes && val.model) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "argus agent config: 'lanes' and 'model' are mutually exclusive — use one or the other",
+        path: ["lanes"],
+      })
+    }
+  }).optional(),
   oracle: AgentOverrideConfigSchema.optional(),
   librarian: AgentOverrideConfigSchema.optional(),
   explore: AgentOverrideConfigSchema.optional(),
@@ -78,3 +95,10 @@ export const AgentOverridesSchema = z.object({
 
 export type AgentOverrideConfig = z.infer<typeof AgentOverrideConfigSchema>
 export type AgentOverrides = z.infer<typeof AgentOverridesSchema>
+
+export type ArgusLaneConfigItem = {
+  model: string
+  variant?: string
+  thinking?: { budgetTokens?: number }
+  reasoningEffort?: string
+}

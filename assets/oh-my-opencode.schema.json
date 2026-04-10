@@ -3927,6 +3927,36 @@
                 }
               },
               "additionalProperties": false
+            },
+            "lanes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "variant": {
+                    "type": "string"
+                  },
+                  "thinking": {
+                    "type": "object",
+                    "properties": {
+                      "budgetTokens": {
+                        "type": "number"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "reasoningEffort": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "model"
+                ],
+                "additionalProperties": false
+              }
             }
           },
           "additionalProperties": false
