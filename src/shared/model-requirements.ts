@@ -32,7 +32,7 @@ export type LockedReviewModelTuple = {
 };
 
 export type ReviewProfileModelPolicy = {
-  lockedArgusLane: LockedReviewModelTuple;
+  lockedArgusLanes: LockedReviewModelTuple[];
   merge: LockedReviewModelTuple;
   tieBreak: LockedReviewModelTuple;
 };
@@ -43,13 +43,22 @@ const LOCKED_REVIEW_SESSION_PATTERN = /themis-review-role:(test|production):(arg
 
 export const REVIEW_PROFILE_MODEL_POLICIES: Record<ReviewProfileName, ReviewProfileModelPolicy> = {
   test: {
-    lockedArgusLane: {
-      agent: "argus",
-      provider: "anthropic",
-      model: "claude-opus-4-6",
-      variant: "max",
-      thinking: { type: "enabled", budgetTokens: 32000 },
-    },
+    lockedArgusLanes: [
+      {
+        agent: "argus",
+        provider: "anthropic",
+        model: "claude-opus-4-6",
+        variant: "max",
+        thinking: { type: "enabled", budgetTokens: 32000 },
+      },
+      {
+        agent: "argus",
+        provider: "openai",
+        model: "gpt-5.4",
+        variant: "high",
+        reasoningEffort: "high",
+      },
+    ],
     merge: {
       agent: "themis",
       provider: "anthropic",
@@ -66,13 +75,22 @@ export const REVIEW_PROFILE_MODEL_POLICIES: Record<ReviewProfileName, ReviewProf
     },
   },
   production: {
-    lockedArgusLane: {
-      agent: "argus",
-      provider: "anthropic",
-      model: "claude-opus-4-6",
-      variant: "max",
-      thinking: { type: "enabled", budgetTokens: 32000 },
-    },
+    lockedArgusLanes: [
+      {
+        agent: "argus",
+        provider: "anthropic",
+        model: "claude-opus-4-6",
+        variant: "max",
+        thinking: { type: "enabled", budgetTokens: 32000 },
+      },
+      {
+        agent: "argus",
+        provider: "openai",
+        model: "gpt-5.4",
+        variant: "high",
+        reasoningEffort: "high",
+      },
+    ],
     merge: {
       agent: "themis",
       provider: "anthropic",
@@ -244,30 +262,44 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   argus: {
     fallbackChain: [
       {
-        providers: ["openai", "github-copilot", "opencode"],
+        providers: ["openai", "opencode"],
         model: "gpt-5.4",
         variant: "high",
       },
       {
-        providers: ["anthropic", "github-copilot", "opencode"],
+        providers: ["amazon-bedrock"],
+        model: "anthropic.claude-opus-4-6-v1",
+        variant: "max",
+      },
+      {
+        providers: ["anthropic", "opencode"],
         model: "claude-opus-4-6",
         variant: "max",
       },
+      { providers: ["github-copilot"], model: "gpt-5.4", variant: "high" },
+      { providers: ["github-copilot"], model: "claude-opus-4.6", variant: "max" },
       { providers: ["opencode-go"], model: "glm-5" },
     ],
   },
   themis: {
     fallbackChain: [
       {
-        providers: ["anthropic", "github-copilot", "opencode"],
+        providers: ["amazon-bedrock"],
+        model: "anthropic.claude-opus-4-6-v1",
+        variant: "max",
+      },
+      {
+        providers: ["anthropic", "opencode"],
         model: "claude-opus-4-6",
         variant: "max",
       },
       {
-        providers: ["openai", "github-copilot", "opencode"],
+        providers: ["openai", "opencode"],
         model: "gpt-5.4",
         variant: "xhigh",
       },
+      { providers: ["github-copilot"], model: "claude-opus-4.6", variant: "max" },
+      { providers: ["github-copilot"], model: "gpt-5.4", variant: "xhigh" },
       { providers: ["opencode-go"], model: "glm-5" },
     ],
   },

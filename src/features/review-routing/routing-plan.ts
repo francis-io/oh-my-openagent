@@ -1,10 +1,6 @@
-import {
-  REVIEW_PROFILE_MODEL_POLICIES,
-  type LockedReviewModelTuple,
-  type ReviewProfileName,
-} from "../../shared/model-requirements"
+import { resolveReviewProfileModelPolicy, type LockedReviewModelTuple, type ReviewProfileName } from "../../shared"
 import { buildLockedReviewSessionMarker } from "../review-state"
-import type { ReviewWaveRoutingPlan } from "./types"
+import type { ReviewLaneName, ReviewWaveRoutingPlan } from "./types"
 
 function lockMarkerForInvocation(profile: ReviewProfileName, role: "argus-lane" | "merge" | "tie-break", wave: number, lane?: string): string {
   const base = buildLockedReviewSessionMarker(profile, role)
@@ -20,38 +16,48 @@ function assertTupleAgent(tuple: LockedReviewModelTuple, expected: LockedReviewM
   }
 }
 
+function deriveLaneName(tuple: LockedReviewModelTuple): ReviewLaneName {
+  const normalized = `${tuple.provider}/${tuple.model}`.toLowerCase()
+  if (normalized.includes("gpt")) return "argus-gpt"
+  return "argus-claude"
+}
+
 export function assertReviewRoutingTupleContract(input: {
-  laneTuple: LockedReviewModelTuple
+  laneTuples: LockedReviewModelTuple[]
   mergeTuple: LockedReviewModelTuple
   tieBreakTuple: LockedReviewModelTuple
 }): void {
-  assertTupleAgent(input.laneTuple, "argus", "argus lane")
+  for (const laneTuple of input.laneTuples) {
+    assertTupleAgent(laneTuple, "argus", "argus lane")
+  }
   assertTupleAgent(input.mergeTuple, "themis", "merge")
   assertTupleAgent(input.tieBreakTuple, "oracle", "tie-break")
 }
 
 export function createReviewWaveRoutingPlan(profile: ReviewProfileName, wave: number): ReviewWaveRoutingPlan {
   const normalizedWave = Math.max(1, Math.floor(wave))
-  const policy = REVIEW_PROFILE_MODEL_POLICIES[profile]
+  const policy = resolveReviewProfileModelPolicy(profile)
 
-  const laneTuple = policy.lockedArgusLane
   assertReviewRoutingTupleContract({
-    laneTuple,
+    laneTuples: policy.lockedArgusLanes,
     mergeTuple: policy.merge,
     tieBreakTuple: policy.tieBreak,
+  })
+
+  const lanes = policy.lockedArgusLanes.map((tuple) => {
+    const laneName = deriveLaneName(tuple)
+    return {
+      lane: laneName,
+      role: "argus-lane" as const,
+      lock_marker: lockMarkerForInvocation(profile, "argus-lane", normalizedWave, laneName),
+      model_tuple: tuple,
+    }
   })
 
   return {
     profile,
     wave: normalizedWave,
-    lanes: [
-      {
-        lane: "argus",
-        role: "argus-lane",
-        lock_marker: lockMarkerForInvocation(profile, "argus-lane", normalizedWave, "argus"),
-        model_tuple: laneTuple,
-      },
-    ],
+    lanes,
     merge: {
       role: "merge",
       lock_marker: lockMarkerForInvocation(profile, "merge", normalizedWave),

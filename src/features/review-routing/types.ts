@@ -4,7 +4,7 @@ import type {
   ReviewProfileName,
 } from "../../shared/model-requirements"
 
-export type ReviewLaneName = "argus"
+export type ReviewLaneName = "argus-claude" | "argus-gpt"
 
 export type LockedInvocationSurface = "task-background"
 
@@ -46,7 +46,7 @@ export type ReviewTieBreakPlan = {
 export type ReviewWaveRoutingPlan = {
   profile: ReviewProfileName
   wave: number
-  lanes: [ReviewLanePlan]
+  lanes: ReviewLanePlan[]
   merge: ReviewMergePlan
   tie_break: ReviewTieBreakPlan
 }
