@@ -55,7 +55,7 @@ describe("themis -> argus e2e (repo-wide mode)", () => {
     expect(target.scope.included_files).toEqual(["src/a.ts", "src/b.ts"])
     expect(target.batches).toEqual([{ ordinal: 1, paths: ["src/a.ts"] }, { ordinal: 2, paths: ["src/b.ts"] }])
     expect(launches).toEqual([
-      { modelID: "claude-opus-4-6", variant: "max" },
+      { modelID: "anthropic.claude-opus-4-6-v1", variant: "max" },
       { modelID: "gpt-5.4", variant: "high" },
     ])
     expect(convergence.stop_reason).toBe("pass-cap-reached")

@@ -139,11 +139,11 @@ describe("themis -> argus e2e (plan mode)", () => {
     expect(target.diff.changed_files).toEqual(["src/review-flow.ts"])
     expect(convergence.stop_reason).toBe("dry-wave-complete")
     expect(launches).toEqual([
-      { description: "argus argus-claude wave 1", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-claude wave 1", modelID: "anthropic.claude-opus-4-6-v1", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
       { description: "argus argus-gpt wave 1", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
-      { description: "argus argus-claude wave 2", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-claude wave 2", modelID: "anthropic.claude-opus-4-6-v1", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
       { description: "argus argus-gpt wave 2", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
-      { description: "argus argus-claude wave 3", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-claude wave 3", modelID: "anthropic.claude-opus-4-6-v1", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
       { description: "argus argus-gpt wave 3", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
     ])
     expect(merge.consensus_findings.map((entry) => entry.fingerprint)).toEqual(["f-conflict", "f-consensus"])
