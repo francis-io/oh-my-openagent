@@ -14,7 +14,7 @@ describe("review-loop resume safety", () => {
     })
 
     state.phase = "merge_pending"
-    state.wave_counters = { completed_waves: 1, dry_waves: 0 }
+    state.wave_counters = { completed_waves: 1, dry_waves: 0, consecutive_dry_waves: 0 }
     state.lane_lineage_by_wave = {
       "1": [
         {
@@ -70,15 +70,22 @@ describe("review-loop resume safety", () => {
         },
       } as never,
       lanePromptsForWave: (wave) => ({
-        "argus": `argus wave ${wave}`,
+        "argus-claude": `argus-claude wave ${wave}`,
+        "argus-gpt": `argus-gpt wave ${wave}`,
       }),
       collectWaveFindings: () => [],
       nowForWave: (wave) => `2026-04-01T22:00:0${wave}.000Z`,
     })
 
-    expect(launched).toEqual(["argus argus wave 2"])
-    expect(result.state.lane_lineage_by_wave["2"]).toHaveLength(1)
+    expect(launched).toEqual([
+      "argus argus-claude wave 2",
+      "argus argus-gpt wave 2",
+      "argus argus-claude wave 3",
+      "argus argus-gpt wave 3",
+    ])
+    expect(result.state.lane_lineage_by_wave["2"]).toHaveLength(2)
     expect(result.state.lane_lineage_by_wave["2"]?.some((entry) => entry.lock_marker === "stale-wave-2")).toBe(false)
+    expect(result.state.lane_lineage_by_wave["3"]).toHaveLength(2)
     expect(result.stop_reason).toBe("dry-wave-complete")
   })
 
@@ -97,7 +104,7 @@ describe("review-loop resume safety", () => {
       parentSessionID: "ses_parent",
       parentMessageID: "msg_parent",
       manager: { launch: async () => ({ id: "bg", sessionID: "ses" }) } as never,
-      lanePromptsForWave: () => ({ "argus": "a" }),
+      lanePromptsForWave: () => ({ "argus-claude": "a", "argus-gpt": "a" }),
       collectWaveFindings: () => [],
     })
 

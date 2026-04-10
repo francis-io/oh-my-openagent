@@ -40,7 +40,7 @@ describe("review-state resume + worktree sync", () => {
       now: "2026-04-01T20:00:00.000Z",
     })
 
-    initial.wave_counters = { completed_waves: 3, dry_waves: 1 }
+    initial.wave_counters = { completed_waves: 3, dry_waves: 1, consecutive_dry_waves: 0 }
     initial.findings.dismissedA = {
       fingerprint: "dismissedA",
       suppression_identity: "dismissedA",
@@ -71,7 +71,7 @@ describe("review-state resume + worktree sync", () => {
     const loaded = readReviewState(statePath)
 
     expect(loaded?.profile).toBe("production")
-    expect(loaded?.wave_counters).toEqual({ completed_waves: 3, dry_waves: 1 })
+    expect(loaded?.wave_counters).toEqual({ completed_waves: 3, dry_waves: 1, consecutive_dry_waves: 0 })
     expect(loaded?.findings.dismissedA?.state).toBe("dismissed")
     expect(loaded?.pending_final_conflict_batch?.batch_id).toBe("final-user-question-wave")
     expect(loaded?.pending_final_conflict_batch?.conflicts).toHaveLength(1)
@@ -87,7 +87,7 @@ describe("review-state resume + worktree sync", () => {
     })
 
     state.phase = "merge_pending"
-    state.wave_counters = { completed_waves: 1, dry_waves: 0 }
+    state.wave_counters = { completed_waves: 1, dry_waves: 0, consecutive_dry_waves: 0 }
     state.lane_lineage_by_wave = {
       "1": [
         {

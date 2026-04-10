@@ -70,8 +70,8 @@ describe("review-loop convergence", () => {
         },
       } as never,
       lanePromptsForWave: (wave) => ({
-        "argus": `argus wave `,
-        
+        "argus-claude": `argus-claude wave ${wave}`,
+        "argus-gpt": `argus-gpt wave ${wave}`,
       }),
       collectWaveFindings: () => [],
       nowForWave: () => "2026-04-01T10:00:01.000Z",
@@ -80,10 +80,11 @@ describe("review-loop convergence", () => {
     //#then
     expect(result.stop_reason).toBe("dry-wave-complete")
     expect(result.state.phase).toBe("pass_boundary")
-    expect(result.state.wave_counters).toEqual({ completed_waves: 1, dry_waves: 1 })
-    expect(result.state.stop_wave).toBe(1)
-    expect(result.state.lane_lineage_by_wave["1"]).toHaveLength(1)
-    expect(launched).toHaveLength(1)
+    expect(result.state.wave_counters).toEqual({ completed_waves: 2, dry_waves: 2, consecutive_dry_waves: 2 })
+    expect(result.state.stop_wave).toBe(2)
+    expect(result.state.lane_lineage_by_wave["1"]).toHaveLength(2)
+    expect(result.state.lane_lineage_by_wave["2"]).toHaveLength(2)
+    expect(launched).toHaveLength(4)
   })
 
   test("stops with cap stop reason when cap is reached before convergence", async () => {
@@ -106,8 +107,8 @@ describe("review-loop convergence", () => {
         launch: async () => ({ id: "bg", sessionID: "ses" }),
       } as never,
       lanePromptsForWave: (wave) => ({
-        "argus": `argus wave `,
-        
+        "argus-claude": `argus-claude wave ${wave}`,
+        "argus-gpt": `argus-gpt wave ${wave}`,
       }),
       collectWaveFindings: ({ wave }) => [createWaveFinding({ fingerprint: `f-${wave}`, severity: "major" })],
       nowForWave: (wave) => `2026-04-01T11:00:0${wave}.000Z`,
@@ -116,10 +117,10 @@ describe("review-loop convergence", () => {
     //#then
     expect(result.stop_reason).toBe("pass-cap-reached")
     expect(result.state.phase).toBe("pass_boundary")
-    expect(result.state.wave_counters).toEqual({ completed_waves: 2, dry_waves: 0 })
+    expect(result.state.wave_counters).toEqual({ completed_waves: 2, dry_waves: 0, consecutive_dry_waves: 0 })
     expect(result.state.stop_wave).toBe(2)
-    expect(result.state.lane_lineage_by_wave["1"]).toHaveLength(1)
-    expect(result.state.lane_lineage_by_wave["2"]).toHaveLength(1)
+    expect(result.state.lane_lineage_by_wave["1"]).toHaveLength(2)
+    expect(result.state.lane_lineage_by_wave["2"]).toHaveLength(2)
   })
 
   test("uses six waves as the default cap for the test profile", async () => {
@@ -141,8 +142,8 @@ describe("review-loop convergence", () => {
         launch: async () => ({ id: "bg", sessionID: "ses" }),
       } as never,
       lanePromptsForWave: (wave) => ({
-        "argus": `argus wave `,
-        
+        "argus-claude": `argus-claude wave ${wave}`,
+        "argus-gpt": `argus-gpt wave ${wave}`,
       }),
       collectWaveFindings: ({ wave }) => [createWaveFinding({ fingerprint: `f-${wave}`, severity: "major" })],
       nowForWave: (wave) => `2026-04-01T11:30:0${Math.min(wave, 9)}.000Z`,
@@ -150,7 +151,7 @@ describe("review-loop convergence", () => {
 
     //#then
     expect(result.stop_reason).toBe("pass-cap-reached")
-    expect(result.state.wave_counters).toEqual({ completed_waves: 6, dry_waves: 0 })
+    expect(result.state.wave_counters).toEqual({ completed_waves: 6, dry_waves: 0, consecutive_dry_waves: 0 })
     expect(result.state.stop_wave).toBe(6)
   })
 
@@ -162,6 +163,7 @@ describe("review-loop convergence", () => {
       suppression_scope_key: "suppression-dismissed",
       now: "2026-04-01T12:00:00.000Z",
     })
+    state.wave_counters = { completed_waves: 1, dry_waves: 1, consecutive_dry_waves: 1 }
     state.findings.fingerprintDismissed = createPersistedFinding({
       fingerprint: "fingerprintDismissed",
       severity: "blocking",
@@ -190,6 +192,7 @@ describe("review-loop convergence", () => {
       suppression_scope_key: "suppression-accepted-open",
       now: "2026-04-01T13:00:00.000Z",
     })
+    state.wave_counters = { completed_waves: 1, dry_waves: 1, consecutive_dry_waves: 1 }
     state.findings.fingerprintAccepted = createPersistedFinding({
       fingerprint: "fingerprintAccepted",
       severity: "major",
@@ -233,12 +236,81 @@ describe("review-loop convergence", () => {
       wave_findings: [createWaveFinding({ fingerprint: "wave-2-minor", severity: "minor" })],
       now: "2026-04-01T14:00:02.000Z",
     }).state
+    const afterWave3 = applyConvergenceWave({
+      state: afterWave2,
+      profile: "test",
+      wave_findings: [],
+      now: "2026-04-01T14:00:03.000Z",
+    }).state
 
     //#then
-    expect(afterWave2.wave_counters).toEqual({ completed_waves: 2, dry_waves: 1 })
-    expect(afterWave2.phase).toBe("pass_boundary")
-    expect(afterWave2.stop_reason).toBe("dry-wave-complete")
-    expect(afterWave2.stop_wave).toBe(2)
+    expect(afterWave2.wave_counters).toEqual({ completed_waves: 2, dry_waves: 1, consecutive_dry_waves: 1 })
+    expect(afterWave2.stop_reason).toBeUndefined()
+    expect(afterWave3.wave_counters).toEqual({ completed_waves: 3, dry_waves: 2, consecutive_dry_waves: 2 })
+    expect(afterWave3.stop_reason).toBe("dry-wave-complete")
+    expect(afterWave3.stop_wave).toBe(3)
+  })
+
+  test("counter resets on non-dry wave between two dry waves", () => {
+    //#given
+    const initial = createInitialReviewState({
+      review_run_id: "run-reset",
+      review_scope_key: "scope-reset",
+      suppression_scope_key: "suppression-reset",
+      now: "2026-04-01T15:00:00.000Z",
+    })
+
+    //#when
+    const afterDry1 = applyConvergenceWave({
+      state: initial,
+      profile: "test",
+      wave_findings: [],
+      now: "2026-04-01T15:00:01.000Z",
+    }).state
+
+    const afterNonDry = applyConvergenceWave({
+      state: afterDry1,
+      profile: "test",
+      wave_findings: [createWaveFinding({ fingerprint: "interrupt", severity: "major" })],
+      now: "2026-04-01T15:00:02.000Z",
+    }).state
+
+    const afterDry2 = applyConvergenceWave({
+      state: afterNonDry,
+      profile: "test",
+      wave_findings: [],
+      now: "2026-04-01T15:00:03.000Z",
+    }).state
+
+    //#then
+    expect(afterDry1.wave_counters.consecutive_dry_waves).toBe(1)
+    expect(afterDry1.stop_reason).toBeUndefined()
+    expect(afterNonDry.wave_counters.consecutive_dry_waves).toBe(0)
+    expect(afterDry2.wave_counters.consecutive_dry_waves).toBe(1)
+    expect(afterDry2.stop_reason).toBeUndefined()
+  })
+
+  test("consecutive_dry_waves defaults to 0 when missing from persisted state", () => {
+    //#given
+    const state = createInitialReviewState({
+      review_run_id: "run-legacy",
+      review_scope_key: "scope-legacy",
+      suppression_scope_key: "suppression-legacy",
+      now: "2026-04-01T16:00:00.000Z",
+    })
+    const legacyState = { ...state, wave_counters: { completed_waves: 1, dry_waves: 1 } as any }
+
+    //#when
+    const decision = applyConvergenceWave({
+      state: legacyState,
+      profile: "test",
+      wave_findings: [],
+      now: "2026-04-01T16:00:01.000Z",
+    })
+
+    //#then
+    expect(decision.stop_reason).toBeUndefined()
+    expect(decision.state.wave_counters.consecutive_dry_waves).toBe(1)
   })
 
   test("duplicate fingerprint normalization is deterministic regardless input order", () => {
