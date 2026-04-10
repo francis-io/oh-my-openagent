@@ -163,8 +163,8 @@ describe("start-review runtime flow", () => {
 
     expect(remediationContent).toContain("f-wave-1")
     expect(remediationContent).toContain("f-wave-2")
-    expect(remediationContent).toContain("- seen_by: argus (wave 1)")
-    expect(remediationContent).toContain("- seen_by: argus (wave 2)")
+    expect(remediationContent).toContain("argus-claude (wave 1)")
+    expect(remediationContent).toContain("argus-claude (wave 2)")
     expect(mergedFindings.runtime_execution.merge.task_id.length).toBeGreaterThan(0)
     expect(mergedFindings.runtime_execution.merge.validation.findings_considered).toBe(2)
 

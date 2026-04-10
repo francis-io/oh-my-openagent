@@ -46,7 +46,7 @@ describe("themis -> argus e2e (repo-wide mode)", () => {
           return { id: `bg_${launches.length}`, sessionID: `ses_${launches.length}` }
         },
       } as never,
-      lanePromptsForWave: () => ({ "argus": "repo-argus" }),
+      lanePromptsForWave: () => ({ "argus-claude": "repo-argus", "argus-gpt": "repo-argus" }),
       collectWaveFindings: () => createPlanModeWaveFindingsForConvergence(1).slice(0, 1),
       nowForWave: () => "2026-04-01T13:00:01.000Z",
     })
@@ -56,6 +56,7 @@ describe("themis -> argus e2e (repo-wide mode)", () => {
     expect(target.batches).toEqual([{ ordinal: 1, paths: ["src/a.ts"] }, { ordinal: 2, paths: ["src/b.ts"] }])
     expect(launches).toEqual([
       { modelID: "claude-opus-4-6", variant: "max" },
+      { modelID: "gpt-5.4", variant: "high" },
     ])
     expect(convergence.stop_reason).toBe("pass-cap-reached")
   })

@@ -98,7 +98,7 @@ describe("themis -> argus e2e (plan mode)", () => {
           return { id: `bg_${launches.length}`, sessionID: `ses_${launches.length}` }
         },
       } as never,
-      lanePromptsForWave: (wave) => ({ "argus": `argus-${wave}` }),
+      lanePromptsForWave: (wave) => ({ "argus-claude": `argus-claude-${wave}`, "argus-gpt": `argus-gpt-${wave}` }),
       collectWaveFindings: ({ wave }) => createPlanModeWaveFindingsForConvergence(wave),
       nowForWave: (wave) => `2026-04-01T12:00:0${wave}.000Z`,
     })
@@ -139,8 +139,12 @@ describe("themis -> argus e2e (plan mode)", () => {
     expect(target.diff.changed_files).toEqual(["src/review-flow.ts"])
     expect(convergence.stop_reason).toBe("dry-wave-complete")
     expect(launches).toEqual([
-      { description: "argus argus wave 1", modelID: "claude-opus-4-6", variant: "max", thinking: { type: "enabled", budgetTokens: 32000 } },
-      { description: "argus argus wave 2", modelID: "claude-opus-4-6", variant: "max", thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-claude wave 1", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-gpt wave 1", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
+      { description: "argus argus-claude wave 2", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-gpt wave 2", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
+      { description: "argus argus-claude wave 3", modelID: "claude-opus-4-6", variant: "max", reasoningEffort: undefined, thinking: { type: "enabled", budgetTokens: 32000 } },
+      { description: "argus argus-gpt wave 3", modelID: "gpt-5.4", variant: "high", reasoningEffort: "high", thinking: undefined },
     ])
     expect(merge.consensus_findings.map((entry) => entry.fingerprint)).toEqual(["f-conflict", "f-consensus"])
     expect(merge.conflicts_for_tie_break).toHaveLength(0)
@@ -150,8 +154,8 @@ describe("themis -> argus e2e (plan mode)", () => {
     expect(batch?.conflicts.map((entry) => entry.fingerprint)).toEqual(["f-conflict"])
     expect(batch?.conflicts[0]?.options).toContain("Dismiss finding")
     expect(restarted.phase).toBe("tie_break_pending")
-    expect(Object.keys(restarted.lane_lineage_by_wave)).toEqual(["1", "2"])
-    expect(restarted.locked_role_invocations.every((record) => record.wave <= 2)).toBe(true)
+    expect(Object.keys(restarted.lane_lineage_by_wave)).toEqual(["1", "2", "3"])
+    expect(restarted.locked_role_invocations.every((record) => record.wave <= 3)).toBe(true)
     expect(readFileSync(remediation.canonical_path, "utf-8")).toContain("f-consensus")
     expect(readFileSync(remediation.canonical_path, "utf-8")).toContain("f-accepted-open")
   })
