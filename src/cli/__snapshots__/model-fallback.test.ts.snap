@@ -273,7 +273,7 @@ exports[`generateModelConfig single native provider uses OpenAI models when only
     },
     "themis": {
       "model": "openai/gpt-5.4",
-      "variant": "high",
+      "variant": "xhigh",
     },
   },
   "categories": {
@@ -366,7 +366,7 @@ exports[`generateModelConfig single native provider uses OpenAI models with isMa
     },
     "themis": {
       "model": "openai/gpt-5.4",
-      "variant": "high",
+      "variant": "xhigh",
     },
   },
   "categories": {
@@ -1307,8 +1307,8 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "themis": {
-      "model": "github-copilot/claude-opus-4.6",
-      "variant": "max",
+      "model": "openai/gpt-5.4",
+      "variant": "xhigh",
     },
   },
   "categories": {
@@ -1503,7 +1503,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "argus": {
-      "model": "github-copilot/gpt-5.4",
+      "model": "opencode/gpt-5.4",
       "variant": "high",
     },
     "atlas": {
@@ -1547,7 +1547,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "themis": {
-      "model": "github-copilot/claude-opus-4.6",
+      "model": "opencode/claude-opus-4-6",
       "variant": "max",
     },
   },
