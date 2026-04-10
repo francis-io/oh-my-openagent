@@ -21,7 +21,7 @@ describe("start-review runtime lane prompts", () => {
       target: target as never,
       review_run_id: "run-1",
     })
-    expect(prompts["argus"]).not.toContain("PRIOR FINDINGS")
+    expect(prompts["argus-claude"]).not.toContain("PRIOR FINDINGS")
   })
 
   test("later waves include prior finding hints", () => {
@@ -36,8 +36,8 @@ describe("start-review runtime lane prompts", () => {
         { fingerprint: "f-2", title: "Duplicate 2", summary: "Already reported too" },
       ],
     })
-    expect(prompts["argus"]).toContain("## PRIOR FINDINGS")
-    expect(prompts["argus"]).toContain("- f-1 | Duplicate 1 | Already reported")
-    expect(prompts["argus"]).toContain("- f-2 | Duplicate 2 | Already reported too")
+    expect(prompts["argus-claude"]).toContain("## PRIOR FINDINGS")
+    expect(prompts["argus-claude"]).toContain("- f-1 | Duplicate 1 | Already reported")
+    expect(prompts["argus-claude"]).toContain("- f-2 | Duplicate 2 | Already reported too")
   })
 })

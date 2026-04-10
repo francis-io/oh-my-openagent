@@ -315,14 +315,23 @@ describe("REVIEW_PROFILE_MODEL_POLICIES", () => {
     const productionProfile = REVIEW_PROFILE_MODEL_POLICIES.production
 
     //#then
-    expect(testProfile.lockedArgusLane).toEqual({
+    expect(testProfile.lockedArgusLanes).toHaveLength(2)
+    expect(testProfile.lockedArgusLanes[0]).toEqual({
       agent: "argus",
       provider: "anthropic",
       model: "claude-opus-4-6",
       variant: "max",
       thinking: { type: "enabled", budgetTokens: 32000 },
     })
-    expect(productionProfile.lockedArgusLane).toEqual({
+    expect(testProfile.lockedArgusLanes[1]).toEqual({
+      agent: "argus",
+      provider: "openai",
+      model: "gpt-5.4",
+      variant: "high",
+      reasoningEffort: "high",
+    })
+    expect(productionProfile.lockedArgusLanes).toHaveLength(2)
+    expect(productionProfile.lockedArgusLanes[0]).toEqual({
       agent: "argus",
       provider: "anthropic",
       model: "claude-opus-4-6",
@@ -371,6 +380,21 @@ describe("REVIEW_PROFILE_MODEL_POLICIES", () => {
     expect(parsed).toEqual({ profile: "production", role: "tie-break" })
     expect(isLockedReviewRoleSession(sessionID)).toBe(true)
     expect(isLockedReviewRoleSession("ses_123_oracle")).toBe(false)
+  })
+
+  test("prefers amazon-bedrock before github-copilot for themis fallback chain", () => {
+    //#given
+    const themis = AGENT_MODEL_REQUIREMENTS["themis"]
+
+    //#then
+    expect(themis.fallbackChain[0]).toEqual({
+      providers: ["amazon-bedrock"],
+      model: "anthropic.claude-opus-4-6-v1",
+      variant: "max",
+    })
+    expect(themis.fallbackChain[1]?.providers).toContain("anthropic")
+    expect(themis.fallbackChain[2]?.providers).toContain("openai")
+    expect(themis.fallbackChain[3]?.providers).toEqual(["github-copilot"])
   })
 })
 
