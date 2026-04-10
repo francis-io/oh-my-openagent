@@ -33,7 +33,7 @@ Themis runs multiple AI reviewers in parallel against your completed work, merge
 - **Deterministic merge** -- Findings are merged by TypeScript consensus logic, not LLM opinion. Conflicts go through a tie-break phase.
 - **Actionable output** -- The final artifact is a remediation plan in `.sisyphus/plans/` that Atlas can execute via `/start-work`. Review flows directly into fixes.
 - **Two review modes** -- Review against a specific plan (`plan+git-diff`) or scan the whole repo (`repo-wide`).
-- **Tunable strictness** -- `test` profile (6 waves, lighter) for iteration; `production` profile (10 waves, stricter) for release gates.
+- **Tunable strictness** -- `test` profile (6-wave cap) for iteration; `production` profile (10-wave cap) for release gates. Both stop after 2 consecutive dry waves.
 
 ---
 
@@ -89,8 +89,17 @@ cat > "$THEMIS_CONFIG/oh-my-openagent.jsonc" << 'EOF'
       "variant": "high"
     },
     "argus": {
-      "model": "openai/gpt-5.4",
-      "variant": "medium"
+      "lanes": [
+        {
+          "model": "openai/gpt-5.4",
+          "variant": "medium"
+        },
+        {
+          "model": "anthropic/claude-opus-4-6",
+          "variant": "max",
+          "thinking": { "budgetTokens": 32000 }
+        }
+      ]
     }
   }
 }
@@ -167,8 +176,8 @@ When input is ambiguous (e.g. `/start-review .`), Themis asks a confirmation que
               ┌──────────────┼──────────────┐
               ▼              ▼              ▼
         ┌──────────┐  ┌──────────┐  ┌──────────┐
-        │ Argus    │  │ Argus    │  │ Argus    │
-        │ Lane 1   │  │ Lane 2   │  │ Lane N   │
+        │  Argus   │  │  Argus   │  │  ...     │
+        │ (Claude) │  │  (GPT)   │  │          │
         └────┬─────┘  └────┬─────┘  └────┬─────┘
              │              │              │
              ▼              ▼              ▼
@@ -229,6 +238,8 @@ Phase 5: Completion
 | `production` | 10 | Before merge/release. Stricter confidence thresholds. |
 
 Both profiles pin stronger model policies during lane, merge, and tie-break execution.
+
+> **Convergence**: The review loop runs until 2 consecutive waves produce no new high-severity findings, or the wave cap is reached -- whichever comes first. A non-dry wave resets the consecutive counter.
 
 ### Finding Schema
 
@@ -314,12 +325,23 @@ In `oh-my-openagent.jsonc`:
       "variant": "high"
     },
     "argus": {
-      "model": "openai/gpt-5.4",
-      "variant": "medium"
+      "lanes": [
+        {
+          "model": "anthropic/claude-opus-4-6",
+          "variant": "max",
+          "thinking": { "budgetTokens": 32000 }
+        },
+        {
+          "model": "openai/gpt-5.4",
+          "variant": "high"
+        }
+      ]
     }
   }
 }
 ```
+
+**Backward compatibility**: if `argus` has a `model` key instead of `lanes`, it runs as a single-lane config. If neither is set, Themis defaults to Claude+GPT dual lanes.
 
 ### Rebuilding After Changes
 
