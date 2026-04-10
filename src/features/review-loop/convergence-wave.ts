@@ -174,8 +174,12 @@ export function applyConvergenceWave(input: {
   const completedWaves = input.state.wave_counters.completed_waves + 1
   const dryWave = newHighSeverityFingerprints.length === 0
   const dryWaves = input.state.wave_counters.dry_waves + (dryWave ? 1 : 0)
+  const consecutiveDryWaves = dryWave
+    ? (input.state.wave_counters.consecutive_dry_waves ?? 0) + 1
+    : 0
   const reachedCap = completedWaves >= passCap
-  const stopReason = dryWave ? "dry-wave-complete" : reachedCap ? "pass-cap-reached" : undefined
+  const converged = consecutiveDryWaves >= 2
+  const stopReason = converged ? "dry-wave-complete" : reachedCap ? "pass-cap-reached" : undefined
 
   const nextState: PersistedReviewState = {
     ...input.state,
@@ -185,6 +189,7 @@ export function applyConvergenceWave(input: {
     wave_counters: {
       completed_waves: completedWaves,
       dry_waves: dryWaves,
+      consecutive_dry_waves: consecutiveDryWaves,
     },
     stop_reason: stopReason,
     stop_wave: stopReason ? completedWaves : undefined,

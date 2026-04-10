@@ -33,6 +33,7 @@ export const PersistedReviewProfileSchema = z.enum(["test", "production"])
 export const ReviewWaveCountersSchema = z.object({
   completed_waves: z.number().int().min(0),
   dry_waves: z.number().int().min(0),
+  consecutive_dry_waves: z.number().int().min(0).default(0),
 })
 
 export const ReviewFindingStateEventSchema = z.object({

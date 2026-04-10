@@ -123,6 +123,7 @@ export function createInitialReviewState(input: {
     wave_counters: {
       completed_waves: 0,
       dry_waves: 0,
+      consecutive_dry_waves: 0,
     },
     findings: {},
     locked_session_markers: {
